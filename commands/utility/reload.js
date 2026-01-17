@@ -22,9 +22,7 @@ module.exports = {
 			await interaction.reply(`Command \`${newCommand.data.name}\` was reloaded!`);
 		} catch (error) {
 			console.error(error);
-			await interaction.reply(
-				`There was an error while reloading a command \`${command.data.name}\`:\n\`${error.message}\``,
-			);
+			await interaction.reply(`There was an error while reloading a command \`${command.data.name}\`:\n\`${error.message}\``);
 		}
 	},
 };
