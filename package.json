@@ -10,7 +10,7 @@
 		"format:check": "prettier --check .",
 		"lint": "eslint .",
 		"lint:fix": "eslint . --fix",
-		"validate": "pnpm lint && pnpm format:check"
+		"validate": "pnpm format:check && pnpm lint"
 	},
 	"keywords": [],
 	"author": "",
