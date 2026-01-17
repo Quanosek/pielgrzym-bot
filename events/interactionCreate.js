@@ -11,6 +11,27 @@ module.exports = {
 		};
 		interaction.reply(locales[interaction.locale] ?? 'Hello World (default is english)');
 
+		if (interaction.isUserContextMenuCommand()) {
+			// console.log(interaction);
+
+			const { username } = interaction.targetUser;
+			console.log(username);
+		}
+
+		if (interaction.isModalSubmit()) {
+			console.log(interaction);
+
+			if (interaction.customId === 'myModal') {
+				await interaction.reply({ content: 'Your submission was received successfully!' });
+
+				// Get the data entered by the user
+				const hobbies = interaction.fields.getTextInputValue('hobbiesInput');
+				const starter = interaction.fields.getStringSelectValues('starter');
+				const picture = interaction.fields.getUploadedFiles('picture');
+				console.log({ hobbies, starter, picture });
+			}
+		}
+
 		if (!interaction.isChatInputCommand()) {
 			// command handling...
 		} else if (interaction.isAutocomplete()) {
