@@ -1,4 +1,15 @@
-const { SlashCommandBuilder } = require('discord.js')
+const {
+  FileUploadBuilder,
+  LabelBuilder,
+  // MessageFlags,
+  ModalBuilder,
+  SlashCommandBuilder,
+  StringSelectMenuBuilder,
+  StringSelectMenuOptionBuilder,
+  TextDisplayBuilder,
+  TextInputBuilder,
+  TextInputStyle,
+} = require('discord.js')
 
 module.exports = {
   data: new SlashCommandBuilder().setName('ping').setDescription('Replies with Pong!'),
