@@ -5,6 +5,6 @@ module.exports = {
   once: true,
 
   execute(client) {
-    console.log(`Ready! Logged in as ${client.user.tag}`)
+    console.log('Bot ' + `${client.user.tag}`.rainbow + ' is ready to use!')
   },
 }
