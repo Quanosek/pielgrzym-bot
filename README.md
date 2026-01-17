@@ -1,4 +1,4 @@
-# <img src="images/pielgrzym-dc.png" alt="" width="38" height="38" align="left">&nbsp;Pielgrzym
+# <img src="images/pielgrzym-dc.png" alt="" width="40" height="40" align="left"> Pielgrzym
 
 - Text Permissions:
   - Send Messages
