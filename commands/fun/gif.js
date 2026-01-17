@@ -1,20 +1,19 @@
-const { SlashCommandBuilder } = require('discord.js');
+const { SlashCommandBuilder } = require('discord.js')
 
 module.exports = {
-	data: new SlashCommandBuilder()
-		.setName('gif')
-		.setDescription('Sends a random gif!')
-		.addStringOption((option) =>
-			option
-				.setName('category')
-				.setDescription('The gif category')
-				.setRequired(true)
-				.addChoices({ name: 'Funny', value: 'gif_funny' }, { name: 'Meme', value: 'gif_meme' }, { name: 'Movie', value: 'gif_movie' }),
-		),
+  data: new SlashCommandBuilder()
+    .setName('gif')
+    .setDescription('Sends a random gif!')
+    .addStringOption((option) =>
+      option
+        .setName('category')
+        .setDescription('The gif category')
+        .setRequired(true)
+        .addChoices({ name: 'Funny', value: 'gif_funny' }, { name: 'Meme', value: 'gif_meme' }, { name: 'Movie', value: 'gif_movie' }),
+    ),
 
-	async execute(interaction) {
-		const category = interaction.options.getString('category');
-		// category must be one of 'gif_funny', 'gif_meme', or 'gif_movie'
-		await interaction.reply(`Here is a random gif from the ${category} category!`);
-	},
-};
+  async execute(interaction) {
+    const category = interaction.options.getString('category')
+    await interaction.reply(`Here is a random gif from the ${category} category!`)
+  },
+}

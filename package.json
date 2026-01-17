@@ -1,32 +1,45 @@
 {
-	"name": "pielgrzym-bot",
-	"version": "0.0.1",
-	"description": "",
-	"main": "index.js",
-	"scripts": {
-		"start": "node .",
-		"prepare": "husky",
-		"format": "prettier --write .",
-		"format:check": "prettier --check .",
-		"lint": "eslint .",
-		"lint:fix": "eslint . --fix",
-		"validate": "pnpm format:check && pnpm lint"
-	},
-	"keywords": [],
-	"author": "",
-	"license": "ISC",
-	"packageManager": "pnpm@10.28.0",
-	"dependencies": {
-		"discord.js": "^14.25.1",
-		"dotenv": "^17.2.3"
-	},
-	"devDependencies": {
-		"@eslint/js": "^9.39.2",
-		"eslint": "^9.39.2",
-		"husky": "^9.1.7",
-		"prettier": "3.8.0"
-	},
-	"engines": {
-		"node": ">=24"
-	}
+  "name": "pielgrzym-bot",
+  "version": "0.0.1",
+  "description": "Discord bot from zasobybiblijne.org",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "validate": "pnpm format:check && pnpm lint",
+    "prepare": "husky"
+  },
+  "keywords": [
+    "bot",
+    "discord",
+    "discord-bot",
+    "discordjs"
+  ],
+  "author": {
+    "name": "Jakub Kłało",
+    "email": "jakub@klalo.pl",
+    "url": "https://www.klalo.pl"
+  },
+  "license": "ISC",
+  "packageManager": "pnpm@10.28.0",
+  "dependencies": {
+    "bufferutil": "^4.1.0",
+    "discord.js": "^14.25.1",
+    "dotenv": "^17.2.3",
+    "zlib-sync": "^0.1.10"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.2",
+    "eslint": "^9.39.2",
+    "eslint-config-prettier": "^10.1.8",
+    "husky": "^9.1.7",
+    "nodemon": "^3.1.11",
+    "prettier": "3.8.0"
+  },
+  "engines": {
+    "node": ">=24"
+  }
 }
