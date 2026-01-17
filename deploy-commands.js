@@ -34,21 +34,21 @@ const rest = new REST().setToken(process.env.DISCORD_TOKEN);
 
 		// for guild-based commands
 		// rest
-		// 	.delete(Routes.applicationGuildCommand(clientId, guildId, 'commandId'))
+		// 	.delete(Routes.applicationGuildCommand(process.env.CLIENT_ID, process.env.GUILD_ID, 'commandId'))
 		// 	.then(() => console.log('Successfully deleted guild command'))
 		// 	.catch(console.error);
 		rest
-			.put(Routes.applicationGuildCommands(clientId, guildId), { body: [] })
+			.put(Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID), { body: [] })
 			.then(() => console.log('Successfully deleted all guild commands.'))
 			.catch(console.error);
 
 		// for global commands
 		// rest
-		// 	.delete(Routes.applicationCommand(clientId, 'commandId'))
+		// 	.delete(Routes.applicationCommand(process.env.CLIENT_ID, 'commandId'))
 		// 	.then(() => console.log('Successfully deleted application command'))
 		// 	.catch(console.error);
 		rest
-			.put(Routes.applicationCommands(clientId), { body: [] })
+			.put(Routes.applicationCommands(process.env.CLIENT_ID), { body: [] })
 			.then(() => console.log('Successfully deleted all application commands.'))
 			.catch(console.error);
 
