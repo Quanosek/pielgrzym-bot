@@ -1,8 +1,8 @@
 const js = require('@eslint/js')
 const n = require('eslint-plugin-n')
 const globals = require('globals')
-const prettierConfig = require('eslint-config-prettier')
 const prettier = require('eslint-plugin-prettier')
+const prettierConfig = require('eslint-config-prettier')
 
 module.exports = [
   js.configs.recommended,
@@ -13,14 +13,11 @@ module.exports = [
       sourceType: 'script',
       globals: { ...globals.node, ...globals.nodeBuiltin },
     },
-  },
-  {
-    files: ['*.config.js', 'ecosystem.config.js'],
-    rules: { 'n/no-unpublished-require': 'off' },
+    plugins: { prettier },
+    rules: {
+      'n/no-unpublished-require': 'off',
+      'prettier/prettier': 'warn',
+    },
   },
   prettierConfig,
-  {
-    plugins: { prettier },
-    rules: { 'prettier/prettier': 'warn' },
-  },
 ]

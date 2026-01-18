@@ -1,4 +1,5 @@
-logs
-node_modules
+data/
+logs/
+node_modules/
 *.yml
 *.yaml
