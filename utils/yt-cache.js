@@ -9,16 +9,7 @@ class DataStore {
       await fs.access(DATA_FILE)
     } catch {
       await fs.mkdir(path.dirname(DATA_FILE), { recursive: true })
-
-      await fs.writeFile(
-        DATA_FILE,
-        JSON.stringify({
-          lastVideoId: null,
-          seenComments: [],
-          videosCache: [],
-          videosCacheTimestamp: null,
-        }),
-      )
+      await fs.writeFile(DATA_FILE, JSON.stringify({}))
     }
   }
 
@@ -27,48 +18,77 @@ class DataStore {
     await fs.writeFile(DATA_FILE, JSON.stringify(data))
   }
 
-  static async getData() {
+  static async getData(guildId = null) {
     await this._ensureDataFile()
     const data = await fs.readFile(DATA_FILE, 'utf-8')
-    return JSON.parse(data)
-  }
+    const allData = JSON.parse(data)
 
-  static async updateVideosCache(videos) {
-    const data = await this.getData()
-    data.videosCache = videos
-    data.videosCacheTimestamp = Date.now()
-    await this._saveData(data)
-  }
-
-  static async getVideosCache() {
-    const data = await this.getData()
-    return {
-      videos: data.videosCache || [],
-      timestamp: data.videosCacheTimestamp,
-    }
-  }
-
-  static async updateLastVideoId(videoId, videoSnippet) {
-    const data = await this.getData()
-    data.lastVideoId = videoId
-
-    const newVideo = {
-      id: videoId,
-      snippet: videoSnippet,
+    if (guildId) {
+      return (
+        allData[guildId] || {
+          lastVideoId: null,
+          seenComments: [],
+          videosCache: [],
+        }
+      )
     }
 
-    data.videosCache = [newVideo, ...data.videosCache]
-
-    await this._saveData(data)
+    return allData
   }
 
-  static async addSeenComment(commentId) {
-    const data = await this.getData()
+  static async getVideosCache(guildId) {
+    const data = await this.getData(guildId)
+    return data.videosCache || []
+  }
 
-    if (!data.seenComments.includes(commentId)) {
-      data.seenComments.push(commentId)
-      await this._saveData(data)
+  static async _updateGuildData(guildId, updates) {
+    const allData = await this.getData()
+
+    if (!allData[guildId]) {
+      allData[guildId] = {
+        lastVideoId: null,
+        seenComments: [],
+        videosCache: [],
+      }
     }
+
+    allData[guildId] = {
+      ...allData[guildId],
+      ...updates,
+    }
+
+    await this._saveData(allData)
+  }
+
+  static async updateVideosCache(guildId, videos) {
+    await this._updateGuildData(guildId, {
+      videosCache: videos,
+    })
+  }
+
+  static async updateLastVideoId(guildId, videoId, videoSnippet) {
+    const guildData = await this.getData(guildId)
+    const videoExists = guildData.videosCache.some((video) => video.id === videoId)
+
+    await this._updateGuildData(guildId, {
+      lastVideoId: videoId,
+      videosCache: videoExists ? guildData.videosCache : [{ id: videoId, snippet: videoSnippet }, ...guildData.videosCache],
+    })
+  }
+
+  static async addSeenComment(guildId, commentId) {
+    const guildData = await this.getData(guildId)
+    if (guildData.seenComments.includes(commentId)) return
+
+    await this._updateGuildData(guildId, {
+      seenComments: [...guildData.seenComments, commentId],
+    })
+  }
+
+  static async clearGuildCache(guildId) {
+    const allData = await this.getData()
+    delete allData[guildId]
+    await this._saveData(allData)
   }
 }
 

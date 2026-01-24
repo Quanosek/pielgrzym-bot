@@ -2,29 +2,47 @@ const he = require('he')
 const moment = require('moment')
 const { EmbedBuilder } = require('discord.js')
 
-const { youtube, channelId, notificationChannelId, setupDate } = require('../config/youtube')
+const { getYouTubeConfig } = require('../config/youtube')
 const DataStore = require('../utils/yt-cache')
 
 class YTCommentsMonitor {
-  constructor(client) {
+  constructor(client, guildId) {
     this.client = client
+    this.guildId = guildId
   }
 
   async checkNewComments() {
     try {
-      const { videos } = await DataStore.getVideosCache()
+      const config = await getYouTubeConfig(this.guildId)
+      if (!config) {
+        console.error(`[YT-Checker] No YouTube config found for guild ${this.guildId}`.yellow)
+        return
+      }
 
-      if (!videos || videos.length === 0) return
+      const { youtube, channelId, notificationChannelId, setupDate } = config
+      const videos = await DataStore.getVideosCache(this.guildId)
 
-      for (const video of videos) {
-        await this._checkCommentsForVideo(video.id, video.snippet.title)
+      if (videos.length === 0) return
+
+      const allNewComments = []
+
+      for (const video of videos.slice(0, 100)) {
+        const newComments = await this._getNewCommentsForVideo(video.id, video.snippet.title, channelId, setupDate, youtube)
+        allNewComments.push(...newComments)
+      }
+
+      allNewComments.sort((a, b) => new Date(a.comment.publishedAt) - new Date(b.comment.publishedAt))
+
+      for (const { commentId, comment, videoId, videoTitle } of allNewComments) {
+        await this._sendCommentNotification(commentId, comment, videoId, videoTitle, channelId, notificationChannelId)
+        await DataStore.addSeenComment(this.guildId, commentId)
       }
     } catch (error) {
-      console.error('[YT-Checker] Error checking comments:\n'.red, error.message)
+      console.error(`[YT-Checker] Guild ${this.guildId}: Error checking comments:\n`.red, error.message)
     }
   }
 
-  async _checkCommentsForVideo(videoId, videoTitle) {
+  async _getNewCommentsForVideo(videoId, videoTitle, channelId, setupDate, youtube) {
     try {
       const commentsResponse = await youtube.commentThreads.list({
         part: 'snippet',
@@ -33,33 +51,46 @@ class YTCommentsMonitor {
         maxResults: 100, // max allowed by YouTube API
       })
 
-      const items = commentsResponse.data.items
-      if (!items || items.length === 0) return
+      const items = commentsResponse.data.items || []
+      if (items.length === 0) return []
 
-      const data = await DataStore.getData()
+      const data = await DataStore.getData(this.guildId)
+      const newComments = []
 
       for (const item of items) {
         const commentId = item.id
         const comment = item.snippet.topLevelComment.snippet
 
-        if (!data.seenComments.includes(commentId) && moment(comment.publishedAt).isSameOrAfter(moment(setupDate))) {
-          await this._sendCommentNotification(commentId, comment, videoId, videoTitle)
-          await DataStore.addSeenComment(commentId)
+        if (data.seenComments.includes(commentId)) continue
+
+        if (moment(comment.publishedAt).isBefore(moment(setupDate))) {
+          await DataStore.addSeenComment(this.guildId, commentId)
+          continue
         }
+
+        newComments.push({
+          commentId,
+          comment,
+          videoId,
+          videoTitle,
+        })
       }
+
+      return newComments
     } catch (error) {
-      if (error.code === 403 && error.message.includes('disabled comments')) return
-      console.error(`[YT-Checker] Error checking comments for ${videoId}:\n`.red, error.message)
+      if (error.code === 403 && error.message.includes('disabled comments')) return []
+      console.error(`[YT-Checker] Guild ${this.guildId}: Error checking comments for ${videoId}:\n`.red, error.message)
+      return []
     }
   }
 
-  async _sendCommentNotification(commentId, comment, videoId, videoTitle) {
+  async _sendCommentNotification(commentId, comment, videoId, videoTitle, channelId, notificationChannelId) {
     const decodedText = he
       .decode(comment.textDisplay)
       .replace(/<a[^>]*>(.*?)<\/a>/gi, '$1')
       .replace(/(<br\s*\/?>\s*)+/gi, '; ')
 
-    const EMBED_DESCRIPTION_LIMIT = 4096 - 5 // max discord embed description length
+    const EMBED_DESCRIPTION_LIMIT = 4096 - 5
     const commentText = decodedText.length > EMBED_DESCRIPTION_LIMIT ? decodedText.substring(0, EMBED_DESCRIPTION_LIMIT) + '...' : decodedText
 
     const isChannelAuthor = comment.authorChannelId && comment.authorChannelId.value === channelId
@@ -83,7 +114,7 @@ class YTCommentsMonitor {
     if (channel) {
       await channel.send({ embeds: [embed] })
     } else {
-      console.error('[YT-Checker] Notification channel not found!'.yellow)
+      console.error(`[YT-Checker] Guild ${this.guildId}: Notification channel not found!`.yellow)
     }
   }
 }

@@ -1,7 +1,7 @@
 const cron = require('node-cron')
 const { Events } = require('discord.js')
 
-const YTVideosCache = require('../services/yt-videos-cache')
+const GuildConfig = require('../utils/guild-config')
 const YTVideosMonitor = require('../services/yt-videos-monitor')
 const YTCommentsMonitor = require('../services/yt-comments-monitor')
 
@@ -11,35 +11,66 @@ module.exports = {
   name: Events.ClientReady,
   once: true,
 
-  execute(client) {
+  async execute(client) {
     console.log('Bot ' + `${client.user.tag}`.rainbow + ' is ready to use!')
 
-    const ytVideosCache = new YTVideosCache(client)
-    cron.schedule(
-      '0 0 1/14 * *',
-      async () => {
-        console.log('[YT-Checker] 🔄 Refreshing videos cache...'.gray)
-        await ytVideosCache.refreshVideosCache()
-      },
-      { timezone },
-    )
+    // Get initial count of guilds with enabled YouTube monitoring
+    const initialGuildConfigs = await GuildConfig.getConfig()
+    const initialMonitoredCount = Object.entries(initialGuildConfigs).filter(([, config]) => config?.ytMonitoring?.enabled).length
 
-    const ytVideosMonitor = new YTVideosMonitor(client)
+    if (initialMonitoredCount === 0) {
+      console.log('[YT-Checker] No guilds with enabled monitoring found.'.gray)
+    } else {
+      console.log(`[YT-Checker] Monitoring enabled for ${initialMonitoredCount} guild(s)`.cyan)
+    }
+
+    let monitoredGuildsCache = null
+    let lastCacheUpdate = 0
+    const CACHE_TTL = 5 * 60 * 1000 // 5 minutes
+
+    async function getMonitoredGuilds() {
+      const now = Date.now()
+
+      if (monitoredGuildsCache && now - lastCacheUpdate < CACHE_TTL) {
+        return monitoredGuildsCache
+      }
+
+      const allGuildConfigs = await GuildConfig.getConfig()
+
+      monitoredGuildsCache = Object.entries(allGuildConfigs)
+        .filter(([, config]) => config?.ytMonitoring?.enabled)
+        .map(([guildId]) => guildId)
+
+      lastCacheUpdate = now
+      return monitoredGuildsCache
+    }
+
+    // Check for new videos for all monitored guilds
     cron.schedule(
       '1 * * * *',
       async () => {
-        console.log('[YT-Checker] 🎬 Checking for new videos...'.gray)
-        await ytVideosMonitor.checkNewVideos()
+        console.log('[YT-Checker] 🎬 Checking for new videos'.gray)
+        const monitoredGuilds = await getMonitoredGuilds()
+
+        for (const guildId of monitoredGuilds) {
+          const ytVideosMonitor = new YTVideosMonitor(client, guildId)
+          await ytVideosMonitor.checkNewVideos()
+        }
       },
       { timezone },
     )
 
-    const ytCommentsMonitor = new YTCommentsMonitor(client)
+    // Check for new comments for all monitored guilds
     cron.schedule(
-      '1,20,40 * * * *',
+      '2,32 * * * *',
       async () => {
-        console.log('[YT-Checker] 💬 Checking for new comments...'.gray)
-        await ytCommentsMonitor.checkNewComments()
+        console.log('[YT-Checker] 💬 Checking for new comments'.gray)
+        const monitoredGuilds = await getMonitoredGuilds()
+
+        for (const guildId of monitoredGuilds) {
+          const ytCommentsMonitor = new YTCommentsMonitor(client, guildId)
+          await ytCommentsMonitor.checkNewComments()
+        }
       },
       { timezone },
     )

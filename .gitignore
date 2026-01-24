@@ -1,5 +1,5 @@
+.vscode/
 data/*
 logs/
 node_modules/
-.vscode/
 .env

@@ -1,6 +1,6 @@
 {
   "name": "pielgrzym-bot",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Discord bot from zasobybiblijne.org",
   "main": "index.js",
   "scripts": {
@@ -42,7 +42,7 @@
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-n": "^17.23.2",
     "eslint-plugin-prettier": "^5.5.5",
-    "globals": "^17.0.0",
+    "globals": "^17.1.0",
     "husky": "^9.1.7",
     "nodemon": "^3.1.11",
     "prettier": "3.8.0"
