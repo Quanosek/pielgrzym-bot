@@ -108,10 +108,10 @@ module.exports = {
           .setTitle('Monitorowanie kanału YouTube zostało włączone!')
           .setThumbnail(youtubeChannel.snippet.thumbnails.high.url)
           .setDescription('Teraz będziesz otrzymywać powiadomienia o nowych filmach i komentarzach z wybranego kanału')
-          .addFields(
-            { name: 'Nazwa kanału', value: `[${youtubeChannel.snippet.title}](https://www.youtube.com/channel/${youtubeChannel.id})` },
-            { name: 'Kanał powiadomień', value: `<#${notificationChannelId}>` },
-          )
+          .addFields({
+            name: 'Nazwa kanału',
+            value: `[${youtubeChannel.snippet.title}](https://www.youtube.com/channel/${youtubeChannel.id})`,
+          })
 
         await interaction.reply({ embeds: [embed] })
       } else {
@@ -154,9 +154,15 @@ module.exports = {
         .setTitle('Informacje o monitorowaniu kanału YouTube')
         .setThumbnail(youtubeChannel.snippet.thumbnails.high.url)
         .addFields(
-          { name: 'Nazwa kanału', value: `[${youtubeChannel.snippet.title}](https://www.youtube.com/channel/${youtubeChannel.id})` },
+          {
+            name: 'Nazwa kanału',
+            value: `[${youtubeChannel.snippet.title}](https://www.youtube.com/channel/${youtubeChannel.id})`,
+          },
           { name: 'Kanał powiadomień', value: `<#${notificationChannelId}>` },
-          { name: 'Data rozpoczęcia monitorowania', value: new Date(setupDate).toLocaleString('pl-PL') },
+          {
+            name: 'Data rozpoczęcia monitorowania',
+            value: new Date(setupDate).toLocaleString('pl-PL'),
+          },
         )
 
       await interaction.reply({ embeds: [embed] })

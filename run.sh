@@ -10,6 +10,6 @@ if [ "$(node -v | sed 's/v//' | cut -d. -f1)" -lt 24 ]; then
 fi
 
 pnpm install
-node ./deploy-commands.js
+pnpm deploy:global
 
 pm2 restart ecosystem.config.js || pm2 start ecosystem.config.js

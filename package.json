@@ -4,7 +4,9 @@
   "description": "Discord bot from zasobybiblijne.org",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon",
+    "start": "nodemon",
+    "deploy:guild": "node deploy-commands.js guild",
+    "deploy:global": "node deploy-commands.js global",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint .",

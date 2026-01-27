@@ -29,23 +29,43 @@ for (const folder of commandFolders) {
 
 const rest = new REST().setToken(process.env.DISCORD_TOKEN)
 
+const scope = process.argv[2]
+
 const deployCommands = async () => {
   try {
-    console.log(`Started refreshing ${commands.length} application (/) commands.`.cyan)
+    if (!scope) {
+      console.log(`Started refreshing ${commands.length} application (/) commands (guild + global).`.cyan)
 
-    // Reset Guild Commands
-    await rest.put(Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID), { body: [] })
-    console.log('-> Successfully deleted all guild commands.')
+      await rest.put(Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID), {
+        body: [],
+      })
+      console.log('-> Successfully deleted all guild commands.')
+      await rest.put(Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID), {
+        body: commands,
+      })
 
-    await rest.put(Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID), { body: commands })
+      await rest.put(Routes.applicationCommands(process.env.CLIENT_ID), { body: [] })
+      console.log('-> Successfully deleted all global commands.')
+      await rest.put(Routes.applicationCommands(process.env.CLIENT_ID), { body: commands })
 
-    // // Reset Global Commands
-    // await rest.put(Routes.applicationCommands(process.env.CLIENT_ID), { body: [] })
-    // console.log('-> Successfully deleted all application commands.')
+      console.log('Successfully reloaded all guild + global application (/) commands!'.cyan)
+    } else {
+      console.log(`Started refreshing ${commands.length} application (/) commands (${scope}).`.cyan)
 
-    // await rest.put(Routes.applicationCommands(process.env.CLIENT_ID), { body: commands })
+      if (scope === 'global') {
+        await rest.put(Routes.applicationCommands(process.env.CLIENT_ID), { body: [] })
+        console.log('-> Successfully deleted all global commands.')
+        await rest.put(Routes.applicationCommands(process.env.CLIENT_ID), { body: commands })
+      } else if (scope === 'guild') {
+        await rest.put(Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID), { body: [] })
+        console.log('-> Successfully deleted all guild commands.')
+        await rest.put(Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID), { body: commands })
+      } else {
+        throw new Error(`Invalid scope "${scope}". Use "guild" or "global".`)
+      }
 
-    console.log(`Successfully reloaded all application (/) commands!`.cyan)
+      console.log(`Successfully reloaded all ${scope} application (/) commands!`.cyan)
+    }
   } catch (error) {
     console.error(error)
   }
