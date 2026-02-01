@@ -1,7 +1,34 @@
-# <img src="images/pielgrzym-dc.png" alt="" width="40" height="40" align="left"> Pielgrzym
+# <img src="images/avatar.png" alt="" width="40" height="40" align="left"> Pielgrzym
+
+### Add this bot to your server:
 
 - Text Permissions:
   - Send Messages
   - Use Slash Commands
 
 https://discord.com/oauth2/authorize?client_id=1462040511580864574&permissions=2147485696&integration_type=0&scope=bot
+
+### How to run source code locally:
+
+- [Node.js](https://nodejs.org/en/download) >= 24 required
+- [pnpm package manager](https://pnpm.io/installation) >= 10.28.0 required
+
+```bash
+pnpm install && pnpm dev
+```
+
+### How to start bot in production:
+
+- [nvm (Node Version Manager)](https://github.com/nvm-sh/nvm) is required
+- [pm2 (Process Manager)](https://pm2.io/docs/runtime/guide/installation/) is required
+
+```bash
+pnpm install && bash ./run.sh
+```
+
+```bash
+# To enable clusters to run on startup paste:
+pm2 startup
+# paste given command and run:
+pm2 save
+```
