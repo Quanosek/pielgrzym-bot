@@ -1,6 +1,6 @@
+const { EmbedBuilder } = require('discord.js')
 const he = require('he')
 const moment = require('moment')
-const { EmbedBuilder } = require('discord.js')
 
 const { getYouTubeConfig } = require('../config/youtube')
 const DataStore = require('../utils/yt-cache')

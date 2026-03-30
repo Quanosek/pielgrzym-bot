@@ -2,11 +2,15 @@
 
 ### Add this bot to your server:
 
+- General Permissions:
+  - Manage Server
+  - Create Instant Invite
+
 - Text Permissions:
   - Send Messages
   - Use Slash Commands
 
-https://discord.com/oauth2/authorize?client_id=1462040511580864574&permissions=2147485696&integration_type=0&scope=bot
+https://discord.com/oauth2/authorize?client_id=1467574765513609399&permissions=2147485729&integration_type=0&scope=bot
 
 ### How to run source code locally:
 

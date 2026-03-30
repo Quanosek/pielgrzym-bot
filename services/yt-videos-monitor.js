@@ -1,5 +1,5 @@
-const he = require('he')
 const { EmbedBuilder } = require('discord.js')
+const he = require('he')
 
 const { getYouTubeConfig } = require('../config/youtube')
 const DataStore = require('../utils/yt-cache')
@@ -72,11 +72,11 @@ class YTVideosMonitor {
     const thumbnailUrl = snippet.thumbnails.maxres?.url || snippet.thumbnails.high?.url || snippet.thumbnails.medium?.url
 
     const embed = new EmbedBuilder()
-      .setColor('#362834')
+      .setColor('#eaaa6a')
       .setTitle('🎬 Opublikowano nowy film!')
-      .setDescription(`${decodedTitle}`)
       .setURL(`https://www.youtube.com/watch?v=${videoId}`)
       .setThumbnail(thumbnailUrl)
+      .setDescription(`${decodedTitle}`)
       .addFields({ name: 'Data', value: new Date(snippet.publishedAt).toLocaleString('pl-PL') })
 
     const channel = await this.client.channels.fetch(notificationChannelId)
