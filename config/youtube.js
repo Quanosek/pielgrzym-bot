@@ -1,5 +1,4 @@
 const { google } = require('googleapis')
-
 const GuildConfig = require('../utils/guild-config')
 
 const youtube = google.youtube({

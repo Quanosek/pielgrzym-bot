@@ -1,6 +1,7 @@
-const { MessageFlags, SlashCommandBuilder } = require('discord.js')
 const fs = require('node:fs')
 const path = require('node:path')
+const { SlashCommandBuilder } = require('discord.js')
+const { BotPermissions: P } = require('../../utils/permissions')
 
 function findCommandPath(commandName) {
   const foldersPath = path.join(__dirname, '../')
@@ -21,16 +22,17 @@ function findCommandPath(commandName) {
 }
 
 module.exports = {
+  permissions: [P.SEND_MESSAGES],
   data: new SlashCommandBuilder()
     .setName('reload')
-    .setDescription('Odśwież komendy bota')
+    .setDescription('Odśwież komendy bota (tylko właściciel)')
     .addStringOption((option) => option.setName('command').setDescription('Wybierz komendę do przeładowania')),
 
   async execute(interaction) {
     if (interaction.user.id !== process.env.OWNER_ID) {
       return await interaction.reply({
         content: '🛑 Tylko właściciel bota może używać tej komendy.',
-        flags: MessageFlags.Ephemeral,
+        ephemeral: true,
       })
     }
 
@@ -73,7 +75,7 @@ module.exports = {
     if (!command) {
       return await interaction.reply({
         content: `❌ Nie znaleziono komendy \`${commandName}\`.`,
-        flags: MessageFlags.Ephemeral,
+        ephemeral: true,
       })
     }
 
@@ -82,7 +84,7 @@ module.exports = {
     if (!commandPath) {
       return await interaction.reply({
         content: `❌ Nie znaleziono pliku komendy \`${commandName}\`.`,
-        flags: MessageFlags.Ephemeral,
+        ephemeral: true,
       })
     }
 

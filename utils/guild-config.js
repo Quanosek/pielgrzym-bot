@@ -47,7 +47,7 @@ class GuildConfig {
     await this._saveConfig(config)
   }
 
-  static async _updateGuildConfig(guildId, settings) {
+  static async updateGuildConfig(guildId, settings) {
     const config = await this.getConfig()
 
     config[guildId] = {
@@ -59,7 +59,7 @@ class GuildConfig {
   }
 
   static async enableMonitoring({ guildId, notificationChannelId, youtubeChannel }) {
-    await this._updateGuildConfig(guildId, {
+    await this.updateGuildConfig(guildId, {
       ytMonitoring: {
         enabled: true,
         setupDate: Date.now(),
@@ -70,7 +70,7 @@ class GuildConfig {
   }
 
   static async disableMonitoring(guildId) {
-    await this._updateGuildConfig(guildId, {
+    await this.updateGuildConfig(guildId, {
       ytMonitoring: { enabled: false },
     })
 

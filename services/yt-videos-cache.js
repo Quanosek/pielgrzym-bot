@@ -39,7 +39,7 @@ class YTVideosCache {
         }
 
         pageCount++
-        console.log(`[YT-Checker] Guild ${this.guildId}: Fetched page ${pageCount}: ${items.length} videos`.gray)
+        console.log(`[YT-Checker] Guild #${this.guildId}: Fetched page ${pageCount}: ${items.length} videos`.gray)
 
         if (allVideos.length >= MAX_VIDEOS_TO_CACHE) {
           allVideos = allVideos.slice(0, MAX_VIDEOS_TO_CACHE)
@@ -55,13 +55,13 @@ class YTVideosCache {
         const data = await DataStore.getData(this.guildId)
         if (data.lastVideoId === null) {
           await DataStore.updateLastVideoId(this.guildId, allVideos[0].id, allVideos[0].snippet)
-          console.log(`[YT-Checker] Guild ${this.guildId}: Set initial lastVideoId to ${allVideos[0].id}`.cyan)
+          console.log(`[YT-Checker] Guild #${this.guildId}: Set initial lastVideoId to ${allVideos[0].id}`.cyan)
         }
       }
 
-      console.log(`[YT-Checker] Guild ${this.guildId}: Cache updated for ${allVideos.length} videos (${pageCount} pages)!`.cyan)
+      console.log(`[YT-Checker] Guild #${this.guildId}: Cache updated for ${allVideos.length} videos (${pageCount} pages)!`.cyan)
     } catch (error) {
-      console.error(`[YT-Checker] Guild ${this.guildId}: Error refreshing videos cache:\n`.red, error.message)
+      console.error(`[YT-Checker] Guild #${this.guildId}: Error refreshing videos cache:\n`.red, error.message)
     }
   }
 }

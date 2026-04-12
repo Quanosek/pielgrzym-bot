@@ -1,15 +1,14 @@
-const { SlashCommandBuilder, ChannelType } = require('discord.js')
+const { ChannelType, SlashCommandBuilder } = require('discord.js')
+const { BotPermissions: P } = require('../../utils/permissions')
 
 module.exports = {
+  permissions: [P.SEND_MESSAGES, P.READ_MESSAGE_HISTORY],
   data: new SlashCommandBuilder()
     .setName('echo')
     .setDescription('Stwórz własną wiadomość')
     .addStringOption((option) => option.setName('input').setDescription('Treść wiadomości').setMaxLength(2_000).setRequired(true))
     .addChannelOption((option) =>
-      option
-        .setName('channel')
-        .setDescription('Kanał, do którego ma zostać wysłana wiadomość (Current channel)')
-        .addChannelTypes(ChannelType.GuildText),
+      option.setName('channel').setDescription('Kanał, do którego ma zostać wysłana wiadomość (Obecny kanał)').addChannelTypes(ChannelType.GuildText),
     )
     .addBooleanOption((option) => option.setName('ephemeral').setDescription('Czy wiadomość ma być widoczna tylko dla Ciebie (False)'))
     .addBooleanOption((option) => option.setName('reply').setDescription('Czy wiadomość ma się wyświetlić jako odpowiedź (True)')),

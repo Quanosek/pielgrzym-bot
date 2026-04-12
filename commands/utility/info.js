@@ -1,6 +1,8 @@
 const { ChannelType, EmbedBuilder, SlashCommandBuilder } = require('discord.js')
+const { BotPermissions: P } = require('../../utils/permissions')
 
 module.exports = {
+  permissions: [P.SEND_MESSAGES, P.EMBED_LINKS, P.CREATE_INSTANT_INVITE, P.MANAGE_GUILD],
   data: new SlashCommandBuilder()
     .setName('info')
     .setDescription('Wyświetl informacje Discord')
@@ -55,7 +57,9 @@ module.exports = {
       )
 
       await interaction.reply({ embeds: [embed] })
-    } else if (interaction.options.getSubcommand() === 'server') {
+    }
+
+    if (interaction.options.getSubcommand() === 'server') {
       const channelCount = interaction.guild.channels.cache.filter((c) => c.type !== ChannelType.GuildCategory).size
       const roleCount = interaction.guild.roles.cache.filter((r) => r.id !== interaction.guild.id).size
 

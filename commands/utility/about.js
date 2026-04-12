@@ -1,6 +1,8 @@
 const { EmbedBuilder, SlashCommandBuilder } = require('discord.js')
+const { BotPermissions: P } = require('../../utils/permissions')
 
 module.exports = {
+  permissions: [P.SEND_MESSAGES, P.EMBED_LINKS],
   data: new SlashCommandBuilder().setName('about').setDescription('Wyświetl informacje na temat bota Pielgrzym'),
 
   async execute(interaction) {
@@ -19,7 +21,7 @@ module.exports = {
         { name: 'Data utworzenia', value: `<t:${Math.floor(client.user.createdTimestamp / 1000)}:F>` },
         {
           name: 'Zaproszenie',
-          value: 'https://discord.com/oauth2/authorize?client_id=1467574765513609399&permissions=2147485729&integration_type=0&scope=bot',
+          value: 'https://discord.com/oauth2/authorize?client_id=1467574765513609399&permissions=2417052785&integration_type=0&scope=bot',
         },
       )
 

@@ -20,29 +20,51 @@ class YTCommentsMonitor {
       }
 
       const { youtube, channelId, notificationChannelId, setupDate } = config
-      const videos = await DataStore.getVideosCache(this.guildId)
 
-      if (videos.length === 0) return
+      const cachedVideos = await DataStore.getVideosCache(this.guildId)
+      if (cachedVideos.length === 0) {
+        console.log(`[YT-Checker] Guild #${this.guildId}: No cached videos, skipping comments check`.yellow)
+        return
+      }
 
+      let data = await DataStore.getData(this.guildId)
+      if (!data.lastCommentsCheck) data.lastCommentsCheck = {}
+
+      const now = Date.now()
+
+      const newestVideos = cachedVideos.slice(0, 100)
+      const olderVideosSorted = cachedVideos
+        .slice(100)
+        .map((video) => ({
+          ...video,
+          lastCheck: data.lastCommentsCheck[video.id] || 0,
+        }))
+        .sort((a, b) => a.lastCheck - b.lastCheck)
+      const olderVideos = olderVideosSorted.slice(0, Math.ceil(olderVideosSorted.length / 48) || 1)
+
+      const videosToCheck = [...newestVideos, ...olderVideos]
       const allNewComments = []
 
-      for (const video of videos.slice(0, 100)) {
-        const newComments = await this._getNewCommentsForVideo(video.id, video.snippet.title, channelId, setupDate, youtube)
+      for (const video of videosToCheck) {
+        const newComments = await this._getNewCommentsForVideo(video.id, video.snippet.title, setupDate, youtube)
         allNewComments.push(...newComments)
+        data.lastCommentsCheck[video.id] = now
       }
+
+      await DataStore._updateGuildData(this.guildId, { lastCommentsCheck: data.lastCommentsCheck })
 
       allNewComments.sort((a, b) => new Date(a.comment.publishedAt) - new Date(b.comment.publishedAt))
 
       for (const { commentId, comment, videoId, videoTitle } of allNewComments) {
-        await this._sendCommentNotification(commentId, comment, videoId, videoTitle, channelId, notificationChannelId)
+        await this._sendNotification(commentId, comment, videoId, videoTitle, channelId, notificationChannelId)
         await DataStore.addSeenComment(this.guildId, commentId)
       }
     } catch (error) {
-      console.error(`[YT-Checker] Guild ${this.guildId}: Error checking comments:\n`.red, error.message)
+      console.error(`[YT-Checker] Guild #${this.guildId}: Error checking comments:\n`.red, error.message)
     }
   }
 
-  async _getNewCommentsForVideo(videoId, videoTitle, channelId, setupDate, youtube) {
+  async _getNewCommentsForVideo(videoId, videoTitle, setupDate, youtube) {
     try {
       const commentsResponse = await youtube.commentThreads.list({
         part: 'snippet',
@@ -79,12 +101,12 @@ class YTCommentsMonitor {
       return newComments
     } catch (error) {
       if (error.code === 403 && error.message.includes('disabled comments')) return []
-      console.error(`[YT-Checker] Guild ${this.guildId}: Error checking comments for ${videoId}:\n`.red, error.message)
+      console.error(`[YT-Checker] Guild #${this.guildId}: Error checking comments for video id=${videoId}:\n`.red, error.message)
       return []
     }
   }
 
-  async _sendCommentNotification(commentId, comment, videoId, videoTitle, channelId, notificationChannelId) {
+  async _sendNotification(commentId, comment, videoId, videoTitle, channelId, notificationChannelId) {
     const decodedText = he
       .decode(comment.textDisplay)
       .replace(/<a[^>]*>(.*?)<\/a>/gi, '$1')
@@ -101,7 +123,7 @@ class YTCommentsMonitor {
         name: comment.authorDisplayName,
         iconURL: comment.authorProfileImageUrl,
       })
-      .setTitle('💬 Pojawił się nowy komentarz!')
+      .setTitle('Pojawił się nowy komentarz! 💬')
       .setURL(`https://www.youtube.com/watch?v=${videoId}&lc=${commentId}`)
       .setDescription(`"${commentText}"`)
       .addFields(
@@ -114,7 +136,7 @@ class YTCommentsMonitor {
     if (channel) {
       await channel.send({ embeds: [embed] })
     } else {
-      console.error(`[YT-Checker] Guild ${this.guildId}: Notification channel not found!`.yellow)
+      console.error(`[YT-Checker] Guild #${this.guildId}: Notification channel not found!`.yellow)
     }
   }
 }

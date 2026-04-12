@@ -18,12 +18,17 @@ class YTVideosMonitor {
         return
       }
 
-      const { youtube, channelId, notificationChannelId } = config
-      const data = await DataStore.getData(this.guildId)
-      const cachedVideos = await DataStore.getVideosCache(this.guildId)
+      const { youtube, channelId, notificationChannelId, youtubeChannel } = config
 
+      const cachedVideos = await DataStore.getVideosCache(this.guildId)
+      if (cachedVideos.length === 0) {
+        console.log(`[YT-Checker] Guild #${this.guildId}: No cached videos, skipping videos check`.yellow)
+        return
+      }
+
+      const data = await DataStore.getData(this.guildId)
       if (data.lastVideoId === null) {
-        console.log(`[YT-Checker] Guild ${this.guildId}: lastVideoId not set, skipping check`.yellow)
+        console.log(`[YT-Checker] Guild #${this.guildId}: lastVideoId not set, skipping videos check`.yellow)
         return
       }
 
@@ -40,6 +45,7 @@ class YTVideosMonitor {
 
       const cachedVideoIds = new Set(cachedVideos.map((v) => v.id))
       const newVideos = []
+
       for (const item of items) {
         const videoId = item.id.videoId
 
@@ -53,30 +59,30 @@ class YTVideosMonitor {
         }
       }
 
-      if (newVideos.length === 0) return
-
-      console.log(`[YT-Checker] Guild ${this.guildId}: Found ${newVideos.length} new video(s)`.cyan)
-
       for (const video of newVideos.reverse()) {
-        await this._sendVideoNotification(video, notificationChannelId)
+        await this._sendNotification(video, notificationChannelId, youtubeChannel)
         await DataStore.updateLastVideoId(this.guildId, video.id, video.snippet)
       }
     } catch (error) {
-      console.error(`[YT-Checker] Guild ${this.guildId}: Error checking new videos:\n`.red, error.message)
+      console.error(`[YT-Checker] Guild #${this.guildId}: Error checking new videos:\n`.red, error.message)
     }
   }
 
-  async _sendVideoNotification(video, notificationChannelId) {
+  async _sendNotification(video, notificationChannelId, youtubeChannel) {
     const { snippet, id: videoId } = video
     const decodedTitle = he.decode(snippet.title)
     const thumbnailUrl = snippet.thumbnails.maxres?.url || snippet.thumbnails.high?.url || snippet.thumbnails.medium?.url
 
     const embed = new EmbedBuilder()
       .setColor('#eaaa6a')
-      .setTitle('🎬 Opublikowano nowy film!')
+      .setAuthor({
+        name: youtubeChannel.snippet.title,
+        iconURL: youtubeChannel.snippet.thumbnails.high.url,
+      })
+      .setTitle('Opublikowano nowy film! 🎬')
       .setURL(`https://www.youtube.com/watch?v=${videoId}`)
       .setThumbnail(thumbnailUrl)
-      .setDescription(`${decodedTitle}`)
+      .setDescription(decodedTitle)
       .addFields({ name: 'Data', value: new Date(snippet.publishedAt).toLocaleString('pl-PL') })
 
     const channel = await this.client.channels.fetch(notificationChannelId)
@@ -84,7 +90,7 @@ class YTVideosMonitor {
     if (channel) {
       await channel.send({ embeds: [embed] })
     } else {
-      console.error(`[YT-Checker] Guild ${this.guildId}: Notification channel not found!`.yellow)
+      console.error(`[YT-Checker] Guild #${this.guildId}: Notification channel not found!`.yellow)
     }
   }
 }

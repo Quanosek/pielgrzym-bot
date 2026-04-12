@@ -16,6 +16,8 @@ module.exports = (client) => {
       const filePath = path.join(commandsPath, file)
       const command = require(filePath)
 
+      if (!command.data || !command.execute) continue
+
       try {
         client.commands.set(command.data.name, command)
       } catch (error) {

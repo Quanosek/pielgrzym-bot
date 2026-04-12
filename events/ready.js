@@ -2,8 +2,10 @@ const cron = require('node-cron')
 const { Events } = require('discord.js')
 
 const GuildConfig = require('../utils/guild-config')
+
 const YTVideosMonitor = require('../services/yt-videos-monitor')
 const YTCommentsMonitor = require('../services/yt-comments-monitor')
+const YTSubsMonitor = require('../services/yt-subs-monitor')
 
 const timezone = 'America/Los_Angeles' // YouTube API uses Pacific Time
 
@@ -28,6 +30,7 @@ module.exports = {
     let lastCacheUpdate = 0
     const CACHE_TTL = 5 * 60 * 1000 // 5 minutes
 
+    // Fetch monitored guilds
     async function getMonitoredGuilds() {
       const now = Date.now()
 
@@ -45,9 +48,9 @@ module.exports = {
       return monitoredGuildsCache
     }
 
-    // Check for new videos for all monitored guilds
+    // Check for new YouTube videos
     cron.schedule(
-      '5 * * * *',
+      '15 * * * *',
       async () => {
         console.log('[YT-Checker] 🎬 Checking for new videos'.gray)
         const monitoredGuilds = await getMonitoredGuilds()
@@ -60,9 +63,9 @@ module.exports = {
       { timezone },
     )
 
-    // Check for new comments for all monitored guilds
+    // Check for new YouTube comments
     cron.schedule(
-      '1,31 * * * *',
+      '0,30 * * * *',
       async () => {
         console.log('[YT-Checker] 💬 Checking for new comments'.gray)
         const monitoredGuilds = await getMonitoredGuilds()
@@ -70,6 +73,21 @@ module.exports = {
         for (const guildId of monitoredGuilds) {
           const ytCommentsMonitor = new YTCommentsMonitor(client, guildId)
           await ytCommentsMonitor.checkNewComments()
+        }
+      },
+      { timezone },
+    )
+
+    // Check YouTube channel basic statistics
+    cron.schedule(
+      '0 * * * *',
+      async () => {
+        console.log('[YT-Checker] 📊 Updating subscriber count'.gray)
+        const monitoredGuilds = await getMonitoredGuilds()
+
+        for (const guildId of monitoredGuilds) {
+          const ytSubsMonitor = new YTSubsMonitor(client, guildId)
+          await ytSubsMonitor.updateSubscriberCount()
         }
       },
       { timezone },

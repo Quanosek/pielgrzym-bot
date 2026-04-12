@@ -1,7 +1,9 @@
 const { EmbedBuilder, SlashCommandBuilder } = require('discord.js')
+const { BotPermissions: P } = require('../../utils/permissions')
 
 module.exports = {
-  data: new SlashCommandBuilder().setName('invite').setDescription('Stwórz zaproszenie do tego serwera, które nigdy nie wygasa'),
+  permissions: [P.SEND_MESSAGES, P.EMBED_LINKS, P.CREATE_INSTANT_INVITE, P.MANAGE_GUILD],
+  data: new SlashCommandBuilder().setName('invite').setDescription('Stwórz zaproszenie do tego serwera, które nigdy nie wygaśnie'),
 
   async execute(interaction) {
     // Define guild infinite invite URL

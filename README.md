@@ -4,13 +4,22 @@
 
 - General Permissions:
   - Manage Server
+  - Manage Roles
+  - Manage Channels
   - Create Instant Invite
+  - View Channels
 
 - Text Permissions:
   - Send Messages
+  - Embed Links
+  - Read Message History
+  - Add Reactions
   - Use Slash Commands
 
-https://discord.com/oauth2/authorize?client_id=1467574765513609399&permissions=2147485729&integration_type=0&scope=bot
+- Voice Permissions
+  - Connect
+
+https://discord.com/oauth2/authorize?client_id=1467574765513609399&permissions=2417052785&integration_type=0&scope=bot
 
 ### How to run source code locally:
 
