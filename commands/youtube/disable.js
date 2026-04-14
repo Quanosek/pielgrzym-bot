@@ -20,6 +20,7 @@ module.exports = async (interaction) => {
     }
 
     const newCounter = { ...counter }
+    const channelId = counter[channelKey]
     delete newCounter[channelKey]
     if (counterType === 'views') delete newCounter.viewsHistory
 
@@ -30,7 +31,16 @@ module.exports = async (interaction) => {
       },
     })
 
-    return interaction.reply(`🔴 Licznik ${counterName} został wyłączony.`)
+    await interaction.reply(`🔴 Licznik ${counterName} został wyłączony.`)
+
+    const guild = interaction.guild
+    const channel = await guild.channels.fetch(channelId).catch(() => null)
+    if (channel) {
+      const resetName = counterType === 'subs' ? 'Subskrypcje' : 'Wyświetlenia'
+      await channel.setName(resetName).catch(() => null)
+    }
+
+    return
   }
 
   // Disable entire monitoring

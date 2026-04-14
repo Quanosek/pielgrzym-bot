@@ -21,8 +21,6 @@ for (const folder of commandFolders) {
 
     if (command.data && command.execute) {
       commands.push(command.data.toJSON())
-    } else {
-      console.warn(`The command at "${file}" is missing a required "data" or "execute" property.`.yellow)
     }
   }
 }

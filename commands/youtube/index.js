@@ -16,7 +16,7 @@ module.exports = {
     .addSubcommand((subcommand) =>
       subcommand
         .setName('check')
-        .setDescription('Sprawdź nowe treści na żądanie')
+        .setDescription('Sprawdź nowe treści na żądanie (tylko administrator)')
         .addStringOption((option) =>
           option.setName('type').setDescription('Typ treści do sprawdzenia').setRequired(true).addChoices(
             {
@@ -41,7 +41,7 @@ module.exports = {
     .addSubcommand((subcommand) =>
       subcommand
         .setName('counter')
-        .setDescription('Ustaw licznik na kanale głosowym')
+        .setDescription('Ustaw licznik na kanale głosowym (tylko administrator)')
         .addStringOption((option) =>
           option.setName('type').setDescription('Rodzaj licznika').setRequired(true).addChoices(
             {
@@ -65,7 +65,7 @@ module.exports = {
     .addSubcommand((subcommand) =>
       subcommand
         .setName('disable')
-        .setDescription('Wyłącz monitorowanie kanału YouTube')
+        .setDescription('Wyłącz monitorowanie (tylko administrator)')
         .addStringOption((option) =>
           option.setName('counter').setDescription('Dezaktywuj wybrany licznik').addChoices(
             {
@@ -82,10 +82,10 @@ module.exports = {
     .addSubcommand((subcommand) =>
       subcommand
         .setName('enable')
-        .setDescription('Włącz monitorowanie kanału YouTube')
+        .setDescription('Włącz monitorowanie (tylko administrator)')
         .addStringOption((option) => option.setName('channel-name').setDescription('Nazwa kanału YouTube').setRequired(true)),
     )
-    .addSubcommand((subcommand) => subcommand.setName('status').setDescription('Pokaż status monitorowania kanału YouTube')),
+    .addSubcommand((subcommand) => subcommand.setName('status').setDescription('Pokaż obecny status monitorowania (tylko administrator)')),
 
   async execute(interaction) {
     const isBotOwner = interaction.user.id === process.env.OWNER_ID
