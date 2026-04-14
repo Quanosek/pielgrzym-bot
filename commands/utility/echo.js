@@ -1,4 +1,4 @@
-const { ChannelType, SlashCommandBuilder } = require('discord.js')
+const { ChannelType, MessageFlags, SlashCommandBuilder } = require('discord.js')
 const { BotPermissions: P } = require('../../utils/permissions')
 
 module.exports = {
@@ -10,24 +10,24 @@ module.exports = {
     .addChannelOption((option) =>
       option.setName('channel').setDescription('Kanał, do którego ma zostać wysłana wiadomość (Obecny kanał)').addChannelTypes(ChannelType.GuildText),
     )
-    .addBooleanOption((option) => option.setName('ephemeral').setDescription('Czy wiadomość ma być widoczna tylko dla Ciebie (False)'))
-    .addBooleanOption((option) => option.setName('reply').setDescription('Czy wiadomość ma się wyświetlić jako odpowiedź (True)')),
+    .addBooleanOption((option) => option.setName('reply').setDescription('Czy wiadomość ma się wyświetlić jako odpowiedź (True)'))
+    .addBooleanOption((option) => option.setName('ephemeral').setDescription('Czy wiadomość ma być widoczna tylko dla Ciebie (False)')),
 
   async execute(interaction) {
     const input = interaction.options.getString('input')
     const channel = interaction.options.getChannel('channel')
-    const ephemeral = interaction.options.getBoolean('ephemeral') ?? false
     const reply = interaction.options.getBoolean('reply') ?? true
+    const ephemeral = interaction.options.getBoolean('ephemeral') ?? false
 
     if (channel) {
       await channel.send(input)
-      await interaction.reply({ content: `Wiadomość została wysłana do ${channel}!`, ephemeral: true })
+      await interaction.reply({ content: `Wiadomość została wysłana do ${channel}!`, flags: MessageFlags.Ephemeral })
     } else {
       if (reply) {
-        await interaction.reply({ content: input, ephemeral })
+        await interaction.reply({ content: input, flags: ephemeral ? MessageFlags.Ephemeral : 0 })
       } else {
         await interaction.channel.send(input)
-        await interaction.reply({ content: 'Wiadomość została wysłana!', ephemeral: true })
+        await interaction.reply({ content: 'Wiadomość została wysłana!', flags: MessageFlags.Ephemeral })
       }
     }
   },

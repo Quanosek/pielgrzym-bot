@@ -1,4 +1,4 @@
-const { EmbedBuilder } = require('discord.js')
+const { EmbedBuilder, MessageFlags } = require('discord.js')
 
 const GuildConfig = require('../../utils/guild-config')
 
@@ -9,15 +9,23 @@ module.exports = async (interaction) => {
   if (!config?.ytMonitoring?.enabled) {
     return await interaction.reply({
       content: '❌ Monitorowanie kanału YouTube nie zostało włączone.',
-      ephemeral: true,
+      flags: MessageFlags.Ephemeral,
     })
   }
 
-  const { youtubeChannel, notificationChannelId, setupDate } = config.ytMonitoring
+  const { youtubeChannel, notificationChannelId, setupDate, counter } = config.ytMonitoring
+
+  const counterFields = []
+  if (counter?.subsChannelId) {
+    counterFields.push({ name: 'Licznik subskrypcji', value: `<#${counter.subsChannelId}>`, inline: true })
+  }
+  if (counter?.viewsChannelId) {
+    counterFields.push({ name: 'Licznik wyświetleń', value: `<#${counter.viewsChannelId}>`, inline: true })
+  }
 
   const embed = new EmbedBuilder()
     .setColor('#ff0033')
-    .setTitle('Informacje o monitorowaniu kanału YouTube')
+    .setTitle('🔎 Status monitorowania kanału YouTube')
     .setThumbnail(youtubeChannel.snippet.thumbnails.high.url)
     .addFields(
       {
@@ -29,8 +37,13 @@ module.exports = async (interaction) => {
         value: `<#${notificationChannelId}>`,
       },
       {
+        name: 'Aktywne liczniki',
+        value: counterFields.length > 0 ? counterFields.length.toString() : 'Brak',
+      },
+      ...counterFields,
+      {
         name: 'Data rozpoczęcia monitorowania',
-        value: new Date(setupDate).toLocaleString('pl-PL'),
+        value: `<t:${Math.floor(new Date(setupDate).getTime() / 1000)}:f>`,
       },
     )
 

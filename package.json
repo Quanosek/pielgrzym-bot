@@ -1,7 +1,7 @@
 {
   "name": "pielgrzym-bot",
-  "version": "0.0.5",
-  "description": "Discord bot from zasobybiblijne.org",
+  "version": "0.0.6",
+  "description": "Dedicated Discord bot for zbawienie.pl and zasobybiblijne.org websites",
   "main": "index.js",
   "scripts": {
     "start": "nodemon",

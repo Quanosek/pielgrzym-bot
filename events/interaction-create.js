@@ -1,4 +1,4 @@
-const { EmbedBuilder, Events } = require('discord.js')
+const { EmbedBuilder, Events, MessageFlags } = require('discord.js')
 const { permissionDisplayNames } = require('../utils/permissions')
 
 module.exports = {
@@ -25,7 +25,7 @@ module.exports = {
             `Bot nie posiada wymaganych uprawnień do wykonania tej komendy:\n\n${missingNames.join(', ')}\n\nZwróć się z tym do administratora serwera.`,
           )
 
-        return await interaction.reply({ embeds: [embed], ephemeral: true })
+        return await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral })
       }
     }
 
@@ -36,7 +36,7 @@ module.exports = {
 
       const message = {
         content: '⚠️ Nie udało się wykonać tej komendy!',
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       }
 
       if (interaction.replied || interaction.deferred) {

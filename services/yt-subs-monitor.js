@@ -1,6 +1,7 @@
 const { PermissionFlagsBits } = require('discord.js')
 
 const { getYouTubeConfig } = require('../config/youtube')
+const { formatNumber } = require('../utils/format-number')
 const GuildConfig = require('../utils/guild-config')
 
 class YTSubsMonitor {
@@ -48,18 +49,39 @@ class YTSubsMonitor {
       if (!guild) return
 
       const channel = await guild.channels.fetch(subsChannelId).catch(() => null)
-      if (!channel) return
+      if (!channel) {
+        console.log(`[YT-Checker] Guild #${this.guildId}: Subs counter channel no longer exists, disabling`.yellow)
+        await this._disableCounter(guildConfig)
+        return
+      }
 
       const requiredPerms = [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.Connect, PermissionFlagsBits.ManageChannels]
       const permissions = channel.permissionsFor(guild.members.me)
       const missingPerms = requiredPerms.filter((perm) => !permissions.has(perm))
-      if (missingPerms.length > 0) return
+      if (missingPerms.length > 0) {
+        console.log(`[YT-Checker] Guild #${this.guildId}: Bot lost permissions on subs counter channel, disabling`.yellow)
+        await this._disableCounter(guildConfig)
+        return
+      }
 
-      const newName = `Subskrypcje: ${subs}`
-      if (channel.name !== newName) await channel.setName(newName)
+      const newName = `Subskrypcje: ${formatNumber(Number(subs))}`
+      await channel.setName(newName).catch((err) => {
+        console.error(`[YT-Checker] Guild #${this.guildId}: Failed to rename subs channel:\n`.red, err.message)
+      })
     } catch (error) {
       console.error(`[YT-Checker] Guild #${this.guildId}: Error updating subscriber count:\n`.red, error.message)
     }
+  }
+
+  async _disableCounter(guildConfig) {
+    const newCounter = { ...guildConfig.ytMonitoring?.counter }
+    delete newCounter.subsChannelId
+    await GuildConfig.updateGuildConfig(this.guildId, {
+      ytMonitoring: {
+        ...guildConfig.ytMonitoring,
+        counter: newCounter,
+      },
+    })
   }
 }
 

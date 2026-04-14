@@ -1,4 +1,4 @@
-const { EmbedBuilder } = require('discord.js')
+const { EmbedBuilder, MessageFlags } = require('discord.js')
 
 const { youtube } = require('../../config/youtube')
 const YTVideosCache = require('../../services/yt-videos-cache')
@@ -9,21 +9,10 @@ module.exports = async (interaction) => {
   const currentConfig = await GuildConfig.getConfig(guildId)
 
   if (currentConfig?.ytMonitoring?.enabled) {
-    return await interaction.reply({
-      content: '⚠️ Monitoring kanału YouTube został już włączony!',
-      ephemeral: true,
-    })
+    await GuildConfig.disableMonitoring(guildId)
   }
 
   const channelName = interaction.options.getString('channel-name')
-
-  if (!channelName) {
-    return await interaction.reply({
-      content: '❌ Podaj nazwę kanału YouTube podczas włączania monitorowania.',
-      ephemeral: true,
-    })
-  }
-
   const cleanName = channelName.replace(/^@/, '')
   const searches = [
     { part: 'id,snippet,statistics', forHandle: cleanName },
@@ -47,8 +36,8 @@ module.exports = async (interaction) => {
 
   if (!youtubeChannel) {
     return await interaction.reply({
-      content: `❌ Nie znaleziono kanału YouTube o nazwie "${channelName}". Upewnij się, że podałeś poprawną nazwę (handle lub username).`,
-      ephemeral: true,
+      content: `❌ Nie znaleziono kanału YouTube o nazwie "${channelName}"! Upewnij się, że podana nazwa kanału jest poprawna.`,
+      flags: MessageFlags.Ephemeral,
     })
   }
 
@@ -61,13 +50,14 @@ module.exports = async (interaction) => {
 
   const embed = new EmbedBuilder()
     .setColor('#ff0033')
-    .setTitle('Monitorowanie kanału YouTube zostało włączone!')
+    .setTitle('🔎 Monitorowanie kanału YouTube zostało włączone!')
     .setThumbnail(youtubeChannel.snippet.thumbnails.high.url)
-    .setDescription('Teraz będziesz otrzymywać powiadomienia o nowych filmach i komentarzach z wybranego kanału')
+    .setDescription('Teraz będziesz otrzymywać powiadomienia o nowych filmach i komentarzach z wybranego kanału.')
     .addFields({
       name: 'Nazwa kanału',
       value: `[${youtubeChannel.snippet.title}](https://www.youtube.com/channel/${youtubeChannel.id})`,
     })
+    .setTimestamp()
 
   return await interaction.reply({ embeds: [embed] })
 }

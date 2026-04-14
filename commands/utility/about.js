@@ -12,7 +12,9 @@ module.exports = {
       .setColor('#9b582e')
       .setTitle('⚙️ Pielgrzym - Bot Discord')
       .setThumbnail(client.user.displayAvatarURL())
-      .setDescription('Pielgrzym to bot Discord do zarządzania społecznością, automatyzacji i rozrywki.')
+      .setDescription(
+        'Pielgrzym to dedykowany bot Discord dla potrzeb społeczności i zarządzania serwerem. Stworzony z myślą o prostym monitoringu wybranych kanałów YouTube bezpośrednio z poziomu serwera Discord.',
+      )
       .addFields(
         { name: 'Tag', value: client.user.tag },
         { name: 'ID bota', value: client.user.id },

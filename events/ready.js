@@ -6,6 +6,7 @@ const GuildConfig = require('../utils/guild-config')
 const YTVideosMonitor = require('../services/yt-videos-monitor')
 const YTCommentsMonitor = require('../services/yt-comments-monitor')
 const YTSubsMonitor = require('../services/yt-subs-monitor')
+const YTViewsMonitor = require('../services/yt-views-monitor')
 
 const timezone = 'America/Los_Angeles' // YouTube API uses Pacific Time
 
@@ -88,6 +89,21 @@ module.exports = {
         for (const guildId of monitoredGuilds) {
           const ytSubsMonitor = new YTSubsMonitor(client, guildId)
           await ytSubsMonitor.updateSubscriberCount()
+        }
+      },
+      { timezone },
+    )
+
+    // Update views counter daily at midnight
+    cron.schedule(
+      '0 0 * * *',
+      async () => {
+        console.log('[YT-Checker] 📊 Updating views count'.gray)
+        const monitoredGuilds = await getMonitoredGuilds()
+
+        for (const guildId of monitoredGuilds) {
+          const ytViewsMonitor = new YTViewsMonitor(client, guildId)
+          await ytViewsMonitor.updateViewsCount()
         }
       },
       { timezone },

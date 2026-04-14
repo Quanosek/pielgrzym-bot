@@ -1,6 +1,6 @@
 const fs = require('node:fs')
 const path = require('node:path')
-const { SlashCommandBuilder } = require('discord.js')
+const { MessageFlags, SlashCommandBuilder } = require('discord.js')
 const { BotPermissions: P } = require('../../utils/permissions')
 
 function findCommandPath(commandName) {
@@ -32,7 +32,7 @@ module.exports = {
     if (interaction.user.id !== process.env.OWNER_ID) {
       return await interaction.reply({
         content: '🛑 Tylko właściciel bota może używać tej komendy.',
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       })
     }
 
@@ -75,7 +75,7 @@ module.exports = {
     if (!command) {
       return await interaction.reply({
         content: `❌ Nie znaleziono komendy \`${commandName}\`.`,
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       })
     }
 
@@ -84,7 +84,7 @@ module.exports = {
     if (!commandPath) {
       return await interaction.reply({
         content: `❌ Nie znaleziono pliku komendy \`${commandName}\`.`,
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       })
     }
 
