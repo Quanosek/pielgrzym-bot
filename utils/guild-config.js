@@ -58,12 +58,15 @@ class GuildConfig {
     await this._saveConfig(config)
   }
 
-  static async enableMonitoring({ guildId, notificationChannelId, youtubeChannel }) {
+  static async enableMonitoring({ guildId, newVideosChannelId, youtubeChannel }) {
     await this.updateGuildConfig(guildId, {
       ytMonitoring: {
         enabled: true,
+        notifications: {
+          newVideosChannelId,
+          activityChannelId: newVideosChannelId,
+        },
         setupDate: Date.now(),
-        notificationChannelId,
         youtubeChannel,
       },
     })

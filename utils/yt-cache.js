@@ -41,7 +41,7 @@ class DataStore {
     return data.videosCache || []
   }
 
-  static async _updateGuildData(guildId, updates) {
+  static async updateGuildData(guildId, updates) {
     const allData = await this.getData()
 
     if (!allData[guildId]) {
@@ -61,7 +61,7 @@ class DataStore {
   }
 
   static async updateVideosCache(guildId, videos) {
-    await this._updateGuildData(guildId, {
+    await this.updateGuildData(guildId, {
       videosCache: videos,
     })
   }
@@ -70,7 +70,7 @@ class DataStore {
     const guildData = await this.getData(guildId)
     const videoExists = guildData.videosCache.some((video) => video.id === videoId)
 
-    await this._updateGuildData(guildId, {
+    await this.updateGuildData(guildId, {
       lastVideoId: videoId,
       videosCache: videoExists ? guildData.videosCache : [{ id: videoId, snippet: videoSnippet }, ...guildData.videosCache],
     })
@@ -80,7 +80,7 @@ class DataStore {
     const guildData = await this.getData(guildId)
     if (guildData.seenComments.includes(commentId)) return
 
-    await this._updateGuildData(guildId, {
+    await this.updateGuildData(guildId, {
       seenComments: [...guildData.seenComments, commentId],
     })
   }

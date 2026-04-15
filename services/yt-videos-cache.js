@@ -17,7 +17,7 @@ class YTVideosCache {
         return
       }
 
-      const { youtube, channelId } = config
+      const { youtube, youtubeChannel } = config
 
       let allVideos = []
       let nextPageToken = null
@@ -26,7 +26,7 @@ class YTVideosCache {
       do {
         const videosResponse = await youtube.search.list({
           part: 'id,snippet',
-          channelId,
+          channelId: youtubeChannel.id,
           type: 'video',
           order: 'date',
           maxResults: 50,

@@ -19,7 +19,13 @@ class YTCommentsMonitor {
         return
       }
 
-      const { youtube, channelId, notificationChannelId, setupDate } = config
+      const { youtube, notifications, setupDate, youtubeChannel } = config
+      const notificationChannelId = notifications?.activityChannelId
+
+      if (!notificationChannelId) {
+        console.error(`[YT-Checker] Guild #${this.guildId}: Missing activityChannelId in config`.yellow)
+        return
+      }
 
       const cachedVideos = await DataStore.getVideosCache(this.guildId)
       if (cachedVideos.length === 0) {
@@ -27,12 +33,13 @@ class YTCommentsMonitor {
         return
       }
 
-      let data = await DataStore.getData(this.guildId)
+      const data = await DataStore.getData(this.guildId)
       if (!data.lastCommentsCheck) data.lastCommentsCheck = {}
 
       const now = Date.now()
 
       const newestVideos = cachedVideos.slice(0, 100)
+
       const olderVideosSorted = cachedVideos
         .slice(100)
         .map((video) => ({
@@ -40,6 +47,7 @@ class YTCommentsMonitor {
           lastCheck: data.lastCommentsCheck[video.id] || 0,
         }))
         .sort((a, b) => a.lastCheck - b.lastCheck)
+
       const olderVideos = olderVideosSorted.slice(0, Math.ceil(olderVideosSorted.length / 48) || 1)
 
       const videosToCheck = [...newestVideos, ...olderVideos]
@@ -51,12 +59,12 @@ class YTCommentsMonitor {
         data.lastCommentsCheck[video.id] = now
       }
 
-      await DataStore._updateGuildData(this.guildId, { lastCommentsCheck: data.lastCommentsCheck })
+      await DataStore.updateGuildData(this.guildId, { lastCommentsCheck: data.lastCommentsCheck })
 
       allNewComments.sort((a, b) => new Date(a.comment.publishedAt) - new Date(b.comment.publishedAt))
 
       for (const { commentId, comment, videoId, videoTitle } of allNewComments) {
-        await this._sendNotification(commentId, comment, videoId, videoTitle, channelId, notificationChannelId)
+        await this._sendNotification(commentId, comment, videoId, videoTitle, youtubeChannel.id, notificationChannelId)
         await DataStore.addSeenComment(this.guildId, commentId)
       }
     } catch (error) {
@@ -131,13 +139,16 @@ class YTCommentsMonitor {
         { name: 'Data', value: new Date(comment.publishedAt).toLocaleString('pl-PL') },
       )
 
-    const channel = await this.client.channels.fetch(notificationChannelId)
+    const guild = this.client.guilds.cache.get(this.guildId)
+    if (!guild) return
 
-    if (channel) {
-      await channel.send({ embeds: [embed] })
-    } else {
+    const channel = await guild.channels.fetch(notificationChannelId).catch(() => null)
+    if (!channel) {
       console.error(`[YT-Checker] Guild #${this.guildId}: Notification channel not found!`.yellow)
+      return
     }
+
+    await channel.send({ embeds: [embed] })
   }
 }
 

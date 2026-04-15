@@ -3,54 +3,67 @@ const GuildConfig = require('../../utils/guild-config')
 
 module.exports = async (interaction) => {
   const guildId = interaction.guildId
-  const currentConfig = await GuildConfig.getConfig(guildId)
+  const config = await GuildConfig.getConfig(guildId)
   const counterType = interaction.options.getString('counter')
 
   // Disable specific counter
   if (counterType) {
-    const counter = currentConfig?.ytMonitoring?.counter
-    const channelKey = counterType === 'subs' ? 'subsChannelId' : 'viewsChannelId'
-    const counterName = counterType === 'subs' ? 'subskrypcji' : 'wyświetleń'
+    // Ensure counter is currently enabled
+    const counters = config?.ytMonitoring?.counters
+    const channelKey = `${counterType}ChannelId`
 
-    if (!counter?.[channelKey]) {
+    let counterName
+    if (counterType === 'subs') counterName = 'subskrypcji'
+    if (counterType === 'views') counterName = 'wyświetleń'
+    if (counterType === 'videos') counterName = 'filmów'
+
+    if (!counters?.[channelKey]) {
       return interaction.reply({
         content: `⚠️ Licznik ${counterName} nie jest aktywny.`,
         flags: MessageFlags.Ephemeral,
       })
     }
 
-    const newCounter = { ...counter }
-    const channelId = counter[channelKey]
+    const channelId = counters[channelKey]
+
+    // Filter out selected counter from config
+    const newCounter = { ...counters }
     delete newCounter[channelKey]
     if (counterType === 'views') delete newCounter.viewsHistory
 
     await GuildConfig.updateGuildConfig(guildId, {
       ytMonitoring: {
-        ...currentConfig.ytMonitoring,
-        counter: newCounter,
+        ...config?.ytMonitoring,
+        counters: newCounter,
       },
     })
 
     await interaction.reply(`🔴 Licznik ${counterName} został wyłączony.`)
 
-    const guild = interaction.guild
-    const channel = await guild.channels.fetch(channelId).catch(() => null)
+    // Reset voice channel name
+    const channel = await interaction.guild.channels.fetch(channelId).catch(() => null)
+
     if (channel) {
-      const resetName = counterType === 'subs' ? 'Subskrypcje' : 'Wyświetlenia'
-      await channel.setName(resetName).catch(() => null)
+      let defaultName
+      if (counterType === 'subs') defaultName = 'Subskrypcje'
+      if (counterType === 'views') defaultName = 'Wyświetlenia'
+      if (counterType === 'videos') defaultName = 'Filmy'
+
+      await channel.setName(defaultName).catch(() => null)
     }
 
     return
   }
 
-  // Disable entire monitoring
-  if (!currentConfig?.ytMonitoring?.enabled) {
+  // Ensure monitoring is currently enabled
+  if (!config?.ytMonitoring?.enabled) {
     return await interaction.reply({
-      content: '⚠️ Monitoring kanału YouTube nie jest włączony.',
+      content: '⚠️ Monitoring kanału YouTube nie został włączony.',
       flags: MessageFlags.Ephemeral,
     })
   }
 
+  // Disable entire monitoring
   await GuildConfig.disableMonitoring(guildId)
 
   return await interaction.reply({

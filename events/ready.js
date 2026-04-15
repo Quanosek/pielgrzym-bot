@@ -1,12 +1,13 @@
 const cron = require('node-cron')
 const { Events } = require('discord.js')
-
 const GuildConfig = require('../utils/guild-config')
 
 const YTVideosMonitor = require('../services/yt-videos-monitor')
 const YTCommentsMonitor = require('../services/yt-comments-monitor')
-const YTSubsMonitor = require('../services/yt-subs-monitor')
-const YTViewsMonitor = require('../services/yt-views-monitor')
+
+const YTSubsCounterMonitor = require('../services/yt-subs-counter-monitor')
+const YTViewsCounterMonitor = require('../services/yt-views-counter-monitor')
+const YTVideosCounterMonitor = require('../services/yt-videos-counter-monitor')
 
 const timezone = 'America/Los_Angeles' // YouTube API uses Pacific Time
 
@@ -57,8 +58,8 @@ module.exports = {
         const monitoredGuilds = await getMonitoredGuilds()
 
         for (const guildId of monitoredGuilds) {
-          const ytVideosMonitor = new YTVideosMonitor(client, guildId)
-          await ytVideosMonitor.checkNewVideos()
+          const monitor = new YTVideosMonitor(client, guildId)
+          await monitor.checkNewVideos()
         }
       },
       { timezone },
@@ -72,14 +73,14 @@ module.exports = {
         const monitoredGuilds = await getMonitoredGuilds()
 
         for (const guildId of monitoredGuilds) {
-          const ytCommentsMonitor = new YTCommentsMonitor(client, guildId)
-          await ytCommentsMonitor.checkNewComments()
+          const monitor = new YTCommentsMonitor(client, guildId)
+          await monitor.checkNewComments()
         }
       },
       { timezone },
     )
 
-    // Check YouTube channel basic statistics
+    // Check YouTube channel basic statistics (and subscriber count)
     cron.schedule(
       '0 * * * *',
       async () => {
@@ -87,14 +88,14 @@ module.exports = {
         const monitoredGuilds = await getMonitoredGuilds()
 
         for (const guildId of monitoredGuilds) {
-          const ytSubsMonitor = new YTSubsMonitor(client, guildId)
-          await ytSubsMonitor.updateSubscriberCount()
+          const monitor = new YTSubsCounterMonitor(client, guildId)
+          await monitor.updateSubscriberCount()
         }
       },
       { timezone },
     )
 
-    // Update views counter daily at midnight
+    // Update voice channel views counter
     cron.schedule(
       '0 0 * * *',
       async () => {
@@ -102,8 +103,23 @@ module.exports = {
         const monitoredGuilds = await getMonitoredGuilds()
 
         for (const guildId of monitoredGuilds) {
-          const ytViewsMonitor = new YTViewsMonitor(client, guildId)
-          await ytViewsMonitor.updateViewsCount()
+          const monitor = new YTViewsCounterMonitor(client, guildId)
+          await monitor.updateViewsCount()
+        }
+      },
+      { timezone },
+    )
+
+    // Update voice channel videos counter
+    cron.schedule(
+      '0 0 * * *',
+      async () => {
+        console.log('[YT-Checker] 📊 Updating videos count'.gray)
+        const monitoredGuilds = await getMonitoredGuilds()
+
+        for (const guildId of monitoredGuilds) {
+          const monitor = new YTVideosCounterMonitor(client, guildId)
+          await monitor.updateVideosCount()
         }
       },
       { timezone },

@@ -7,18 +7,15 @@ const youtube = google.youtube({
 })
 
 async function getYouTubeConfig(guildId) {
-  const guildConfig = await GuildConfig.getConfig(guildId)
+  const config = await GuildConfig.getConfig(guildId)
+  if (!config?.ytMonitoring?.enabled) return null
 
-  if (!guildConfig?.ytMonitoring?.enabled) {
-    return null
-  }
-
-  const { ytMonitoring } = guildConfig
+  const { ytMonitoring } = config || {}
 
   return {
     youtube,
-    channelId: ytMonitoring.youtubeChannel.id,
-    notificationChannelId: ytMonitoring.notificationChannelId,
+    counters: ytMonitoring.counters,
+    notifications: ytMonitoring.notifications,
     setupDate: ytMonitoring.setupDate,
     youtubeChannel: ytMonitoring.youtubeChannel,
   }

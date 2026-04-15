@@ -1,7 +1,8 @@
 const { MessageFlags, PermissionFlagsBits } = require('discord.js')
 
-const YTSubsMonitor = require('../../services/yt-subs-monitor')
-const YTViewsMonitor = require('../../services/yt-views-monitor')
+const YTSubsCounterMonitor = require('../../services/yt-subs-counter-monitor')
+const YTViewsCounterMonitor = require('../../services/yt-views-counter-monitor')
+const YTVideosCounterMonitor = require('../../services/yt-videos-counter-monitor')
 
 const { permissionDisplayNames } = require('../../utils/permissions')
 const GuildConfig = require('../../utils/guild-config')
@@ -25,14 +26,14 @@ module.exports = async (interaction) => {
     })
   }
 
-  const currentConfig = await GuildConfig.getConfig(guildId)
+  const config = await GuildConfig.getConfig(guildId)
 
   if (type === 'subs') {
     await GuildConfig.updateGuildConfig(guildId, {
       ytMonitoring: {
-        ...currentConfig.ytMonitoring,
-        counter: {
-          ...currentConfig.ytMonitoring?.counter,
+        ...config?.ytMonitoring,
+        counters: {
+          ...config?.ytMonitoring?.counters,
           subsChannelId: voiceChannel.id,
         },
       },
@@ -41,16 +42,16 @@ module.exports = async (interaction) => {
     await interaction.reply(`✅ Ustawiono kanał <#${voiceChannel.id}> jako licznik subskrypcji.`)
 
     console.log('📊 Updating subscriber count on user demand'.gray)
-    const ytSubsMonitor = new YTSubsMonitor(interaction.client, guildId)
-    await ytSubsMonitor.updateSubscriberCount()
+    const monitor = new YTSubsCounterMonitor(interaction.client, guildId)
+    await monitor.updateSubscriberCount()
   }
 
   if (type === 'views') {
     await GuildConfig.updateGuildConfig(guildId, {
       ytMonitoring: {
-        ...currentConfig.ytMonitoring,
-        counter: {
-          ...currentConfig.ytMonitoring?.counter,
+        ...config?.ytMonitoring,
+        counters: {
+          ...config?.ytMonitoring?.counters,
           viewsChannelId: voiceChannel.id,
         },
       },
@@ -59,7 +60,25 @@ module.exports = async (interaction) => {
     await interaction.reply(`✅ Ustawiono kanał <#${voiceChannel.id}> jako licznik wyświetleń.`)
 
     console.log('📊 Updating views count on user demand'.gray)
-    const ytViewsMonitor = new YTViewsMonitor(interaction.client, guildId)
-    await ytViewsMonitor.updateViewsCount()
+    const monitor = new YTViewsCounterMonitor(interaction.client, guildId)
+    await monitor.updateViewsCount()
+  }
+
+  if (type === 'videos') {
+    await GuildConfig.updateGuildConfig(guildId, {
+      ytMonitoring: {
+        ...config?.ytMonitoring,
+        counters: {
+          ...config?.ytMonitoring?.counters,
+          videosChannelId: voiceChannel.id,
+        },
+      },
+    })
+
+    await interaction.reply(`✅ Ustawiono kanał <#${voiceChannel.id}> jako licznik filmów.`)
+
+    console.log('📊 Updating videos count on user demand'.gray)
+    const monitor = new YTVideosCounterMonitor(interaction.client, guildId)
+    await monitor.updateVideosCount()
   }
 }

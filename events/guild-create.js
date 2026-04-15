@@ -1,5 +1,4 @@
 const { Events } = require('discord.js')
-
 const GuildConfig = require('../utils/guild-config')
 
 module.exports = {

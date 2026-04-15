@@ -18,7 +18,13 @@ class YTVideosMonitor {
         return
       }
 
-      const { youtube, channelId, notificationChannelId, youtubeChannel } = config
+      const { youtube, notifications, youtubeChannel } = config
+      const notificationChannelId = notifications?.newVideosChannelId
+
+      if (!notificationChannelId) {
+        console.error(`[YT-Checker] Guild #${this.guildId}: Missing newVideosChannelId in config`.yellow)
+        return
+      }
 
       const cachedVideos = await DataStore.getVideosCache(this.guildId)
       if (cachedVideos.length === 0) {
@@ -34,7 +40,7 @@ class YTVideosMonitor {
 
       const videosResponse = await youtube.search.list({
         part: 'id,snippet',
-        channelId,
+        channelId: youtubeChannel.id,
         type: 'video',
         order: 'date',
         maxResults: 50, // max allowed by YouTube API
@@ -85,13 +91,16 @@ class YTVideosMonitor {
       .setDescription(decodedTitle)
       .addFields({ name: 'Data', value: new Date(snippet.publishedAt).toLocaleString('pl-PL') })
 
-    const channel = await this.client.channels.fetch(notificationChannelId)
+    const guild = this.client.guilds.cache.get(this.guildId)
+    if (!guild) return
 
-    if (channel) {
-      await channel.send({ embeds: [embed] })
-    } else {
+    const channel = await guild.channels.fetch(notificationChannelId).catch(() => null)
+    if (!channel) {
       console.error(`[YT-Checker] Guild #${this.guildId}: Notification channel not found!`.yellow)
+      return
     }
+
+    await channel.send({ embeds: [embed] })
   }
 }
 

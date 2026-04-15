@@ -4,7 +4,7 @@ const { getYouTubeConfig } = require('../config/youtube')
 const { formatNumber } = require('../utils/format-number')
 const GuildConfig = require('../utils/guild-config')
 
-class YTSubsMonitor {
+class YTSubsCounterMonitor {
   constructor(client, guildId) {
     this.client = client
     this.guildId = guildId
@@ -13,7 +13,7 @@ class YTSubsMonitor {
   async updateSubscriberCount() {
     try {
       const guildConfig = await GuildConfig.getConfig(this.guildId)
-      const subsChannelId = guildConfig?.ytMonitoring?.counter?.subsChannelId
+      const subsChannelId = guildConfig?.ytMonitoring?.counters?.subsChannelId
       if (!subsChannelId) return
 
       const config = await getYouTubeConfig(this.guildId)
@@ -22,11 +22,11 @@ class YTSubsMonitor {
         return
       }
 
-      const { youtube, channelId } = config
+      const { youtube, youtubeChannel } = config
 
       const channelResponse = await youtube.channels.list({
         part: 'snippet,statistics',
-        id: channelId,
+        id: youtubeChannel.id,
       })
 
       const item = channelResponse?.data?.items?.[0]
@@ -34,9 +34,9 @@ class YTSubsMonitor {
 
       await GuildConfig.updateGuildConfig(this.guildId, {
         ytMonitoring: {
-          ...guildConfig.ytMonitoring,
+          ...guildConfig?.ytMonitoring,
           youtubeChannel: {
-            id: channelId,
+            id: youtubeChannel.id,
             snippet: item.snippet,
             statistics: item.statistics,
           },
@@ -66,7 +66,7 @@ class YTSubsMonitor {
 
       const newName = `Subskrypcje: ${formatNumber(Number(subs))}`
       await channel.setName(newName).catch((err) => {
-        console.error(`[YT-Checker] Guild #${this.guildId}: Failed to rename subs channel:\n`.red, err.message)
+        console.error(`[YT-Checker] Guild #${this.guildId}: Failed to rename voice channel:\n`.red, err.message)
       })
     } catch (error) {
       console.error(`[YT-Checker] Guild #${this.guildId}: Error updating subscriber count:\n`.red, error.message)
@@ -74,15 +74,16 @@ class YTSubsMonitor {
   }
 
   async _disableCounter(guildConfig) {
-    const newCounter = { ...guildConfig.ytMonitoring?.counter }
+    const newCounter = { ...guildConfig?.ytMonitoring?.counters }
     delete newCounter.subsChannelId
+
     await GuildConfig.updateGuildConfig(this.guildId, {
       ytMonitoring: {
-        ...guildConfig.ytMonitoring,
-        counter: newCounter,
+        ...guildConfig?.ytMonitoring,
+        counters: newCounter,
       },
     })
   }
 }
 
-module.exports = YTSubsMonitor
+module.exports = YTSubsCounterMonitor

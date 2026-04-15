@@ -5,6 +5,7 @@ const check = require('./check')
 const counter = require('./counter')
 const disable = require('./disable')
 const enable = require('./enable')
+// const settings = require('./settings')
 const status = require('./status')
 
 module.exports = {
@@ -20,20 +21,24 @@ module.exports = {
         .addStringOption((option) =>
           option.setName('type').setDescription('Typ treści do sprawdzenia').setRequired(true).addChoices(
             {
-              name: 'Filmy',
-              value: 'videos',
+              name: 'Nowe filmy',
+              value: 'notifications-videos',
             },
             {
-              name: 'Komentarze',
-              value: 'comments',
+              name: 'Nowe komentarze',
+              value: 'notifications-activity',
             },
             {
-              name: 'Subskrypcje',
-              value: 'subs',
+              name: 'Licznik subskrypcji',
+              value: 'counter-subs',
             },
             {
-              name: 'Wyświetlenia',
-              value: 'views',
+              name: 'Licznik wyświetleń',
+              value: 'counter-views',
+            },
+            {
+              name: 'Licznik filmów',
+              value: 'counter-videos',
             },
           ),
         ),
@@ -51,6 +56,10 @@ module.exports = {
             {
               name: 'Wyświetlenia',
               value: 'views',
+            },
+            {
+              name: 'Filmy',
+              value: 'videos',
             },
           ),
         )
@@ -76,6 +85,10 @@ module.exports = {
               name: 'Wyświetlenia',
               value: 'views',
             },
+            {
+              name: 'Filmy',
+              value: 'videos',
+            },
           ),
         ),
     )
@@ -85,7 +98,13 @@ module.exports = {
         .setDescription('Włącz monitorowanie (tylko administrator)')
         .addStringOption((option) => option.setName('channel-name').setDescription('Nazwa kanału YouTube').setRequired(true)),
     )
-    .addSubcommand((subcommand) => subcommand.setName('status').setDescription('Pokaż obecny status monitorowania (tylko administrator)')),
+    // .addSubcommand((subcommand) => subcommand.setName('settings').setDescription('Włącz nowe monitorowanie (tylko administrator)'))
+    .addSubcommand((subcommand) =>
+      subcommand
+        .setName('status')
+        .setDescription('Pokaż obecny status monitorowania (tylko administrator)')
+        .addBooleanOption((option) => option.setName('ephemeral').setDescription('Czy wiadomość ma być widoczna tylko dla Ciebie (False)')),
+    ),
 
   async execute(interaction) {
     const isBotOwner = interaction.user.id === process.env.OWNER_ID
@@ -104,6 +123,7 @@ module.exports = {
     if (subcommand === 'counter') await counter(interaction)
     if (subcommand === 'disable') await disable(interaction)
     if (subcommand === 'enable') await enable(interaction)
+    // if (subcommand === 'settings') await settings(interaction)
     if (subcommand === 'status') await status(interaction)
   },
 }

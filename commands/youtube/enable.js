@@ -6,9 +6,9 @@ const GuildConfig = require('../../utils/guild-config')
 
 module.exports = async (interaction) => {
   const guildId = interaction.guildId
-  const currentConfig = await GuildConfig.getConfig(guildId)
+  const config = await GuildConfig.getConfig(guildId)
 
-  if (currentConfig?.ytMonitoring?.enabled) {
+  if (config?.ytMonitoring?.enabled) {
     await GuildConfig.disableMonitoring(guildId)
   }
 
@@ -41,8 +41,8 @@ module.exports = async (interaction) => {
     })
   }
 
-  const notificationChannelId = interaction.channelId
-  await GuildConfig.enableMonitoring({ guildId, notificationChannelId, youtubeChannel })
+  const newVideosChannelId = interaction.channelId
+  await GuildConfig.enableMonitoring({ guildId, newVideosChannelId, youtubeChannel })
 
   console.log('🔄 Refreshing videos cache on user demand'.gray)
   const ytVideosCache = new YTVideosCache(interaction.client, guildId)
