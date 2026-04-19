@@ -52,7 +52,7 @@ module.exports = {
 
     // Check for new YouTube videos
     cron.schedule(
-      '15 * * * *',
+      '5 * * * *',
       async () => {
         console.log('[YT-Checker] 🎬 Checking for new videos'.gray)
         const monitoredGuilds = await getMonitoredGuilds()
@@ -67,7 +67,7 @@ module.exports = {
 
     // Check for new YouTube comments
     cron.schedule(
-      '0,30 * * * *',
+      '1,31 * * * *',
       async () => {
         console.log('[YT-Checker] 💬 Checking for new comments'.gray)
         const monitoredGuilds = await getMonitoredGuilds()

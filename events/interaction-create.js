@@ -5,6 +5,21 @@ module.exports = {
   name: Events.InteractionCreate,
 
   async execute(interaction) {
+    if (interaction.isChannelSelectMenu()) {
+      const selected = interaction.client.interactionHandlers.channelSelect(interaction)
+
+      if (!selected) return
+
+      const channelSelectHandlers = interaction.client.interactionHandlers?.channelSelectHandlers || []
+
+      for (const handleChannelSelect of channelSelectHandlers) {
+        const handled = await handleChannelSelect(interaction, selected)
+        if (handled) return
+      }
+
+      return
+    }
+
     if (!interaction.isChatInputCommand()) return
 
     const command = interaction.client.commands.get(interaction.commandName)
@@ -25,7 +40,8 @@ module.exports = {
             `Bot nie posiada wymaganych uprawnień do wykonania tej komendy:\n\n${missingNames.join(', ')}\n\nZwróć się z tym do administratora serwera.`,
           )
 
-        return await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral })
+        await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral })
+        return
       }
     }
 

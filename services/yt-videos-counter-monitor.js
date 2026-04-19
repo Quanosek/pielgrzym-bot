@@ -1,15 +1,12 @@
 const { PermissionFlagsBits } = require('discord.js')
 
+const { formatNumber } = require('../utils/format-number')
 const GuildConfig = require('../utils/guild-config')
 
 class YTVideosCounterMonitor {
   constructor(client, guildId) {
     this.client = client
     this.guildId = guildId
-  }
-
-  _formatWithSpaces(value) {
-    return String(value).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
   }
 
   async updateVideosCount() {
@@ -43,7 +40,7 @@ class YTVideosCounterMonitor {
         return
       }
 
-      const newName = `Filmy: ${this._formatWithSpaces(videos)}`
+      const newName = `Filmy: ${formatNumber(videos, { style: 'spaced' })}`
       await channel.setName(newName).catch((err) => {
         console.error(`[YT-Checker] Guild #${this.guildId}: Failed to rename voice channel:\n`.red, err.message)
       })

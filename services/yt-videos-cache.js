@@ -29,7 +29,7 @@ class YTVideosCache {
           channelId: youtubeChannel.id,
           type: 'video',
           order: 'date',
-          maxResults: 50,
+          maxResults: 50, // max allowed by YouTube API
           pageToken: nextPageToken,
         })
 

@@ -66,13 +66,13 @@ class DataStore {
     })
   }
 
-  static async updateLastVideoId(guildId, videoId, videoSnippet) {
+  static async updateLastVideoId(guildId, videoId, snippet) {
     const guildData = await this.getData(guildId)
     const videoExists = guildData.videosCache.some((video) => video.id === videoId)
 
     await this.updateGuildData(guildId, {
       lastVideoId: videoId,
-      videosCache: videoExists ? guildData.videosCache : [{ id: videoId, snippet: videoSnippet }, ...guildData.videosCache],
+      videosCache: videoExists ? guildData.videosCache : [{ id: videoId, snippet }, ...guildData.videosCache],
     })
   }
 

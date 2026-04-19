@@ -5,7 +5,7 @@ const check = require('./check')
 const counter = require('./counter')
 const disable = require('./disable')
 const enable = require('./enable')
-// const settings = require('./settings')
+const settings = require('./settings')
 const status = require('./status')
 
 module.exports = {
@@ -98,7 +98,7 @@ module.exports = {
         .setDescription('Włącz monitorowanie (tylko administrator)')
         .addStringOption((option) => option.setName('channel-name').setDescription('Nazwa kanału YouTube').setRequired(true)),
     )
-    // .addSubcommand((subcommand) => subcommand.setName('settings').setDescription('Włącz nowe monitorowanie (tylko administrator)'))
+    .addSubcommand((subcommand) => subcommand.setName('settings').setDescription('Włącz nowe monitorowanie (tylko administrator)'))
     .addSubcommand((subcommand) =>
       subcommand
         .setName('status')
@@ -123,7 +123,7 @@ module.exports = {
     if (subcommand === 'counter') await counter(interaction)
     if (subcommand === 'disable') await disable(interaction)
     if (subcommand === 'enable') await enable(interaction)
-    // if (subcommand === 'settings') await settings(interaction)
+    if (subcommand === 'settings') await settings(interaction)
     if (subcommand === 'status') await status(interaction)
   },
 }

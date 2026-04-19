@@ -2,8 +2,14 @@ const fs = require('node:fs')
 const path = require('node:path')
 const { Collection } = require('discord.js')
 
+const interactionChannelSelect = require('./interactions/channel-select.js')
+
 module.exports = (client) => {
   client.commands = new Collection()
+  client.interactionHandlers = {
+    channelSelect: interactionChannelSelect,
+    channelSelectHandlers: [],
+  }
 
   const foldersPath = path.join(__dirname, '../commands')
   const commandFolders = fs.readdirSync(foldersPath)

@@ -95,7 +95,7 @@ class YTViewsCounterMonitor {
         return
       }
 
-      const newName = `Wyświetlenia: ${formatNumber(views)}`
+      const newName = `Wyświetlenia: ${formatNumber(views, { style: 'compact' })}`
       await channel.setName(newName).catch((err) => {
         console.error(`[YT-Checker] Guild #${this.guildId}: Failed to rename voice channel:\n`.red, err.message)
       })

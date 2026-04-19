@@ -64,7 +64,7 @@ class YTSubsCounterMonitor {
         return
       }
 
-      const newName = `Subskrypcje: ${formatNumber(Number(subs))}`
+      const newName = `Subskrypcje: ${formatNumber(subs, { style: 'compact' })}`
       await channel.setName(newName).catch((err) => {
         console.error(`[YT-Checker] Guild #${this.guildId}: Failed to rename voice channel:\n`.red, err.message)
       })
