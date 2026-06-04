@@ -43,6 +43,7 @@ class YTCommentsMonitor {
       const seenLocally = new Set(data.seenComments || [])
 
       const allNewItems = []
+      const unavailableVideoIds = new Set()
       const now = Date.now()
 
       // active window: recent ≤60d or top 100
@@ -52,8 +53,14 @@ class YTCommentsMonitor {
       })
 
       for (const video of activeVideos) {
-        const { newItems } = await this._scanVideoComments(youtube, video, seenLocally, setupDateMs)
+        const { newItems, unavailable } = await this._scanVideoComments(youtube, video, seenLocally, setupDateMs)
         allNewItems.push(...newItems)
+        if (unavailable) unavailableVideoIds.add(video.id)
+      }
+
+      if (unavailableVideoIds.size > 0) {
+        const filteredCache = cachedVideos.filter((video) => !unavailableVideoIds.has(video.id))
+        await DataStore.updateVideosCache(this.guildId, filteredCache)
       }
 
       await DataStore.updateGuildData(this.guildId, {
@@ -159,14 +166,24 @@ class YTCommentsMonitor {
       // phase 3: full scan changed videos
       const allNewItems = []
       const metaUpdates = {}
+      const unavailableVideoIds = new Set()
 
       for (const video of videosNeedingScan) {
-        const { newItems, latestCommentId } = await this._scanVideoComments(youtube, video, seenLocally, setupDateMs)
+        const { newItems, latestCommentId, unavailable } = await this._scanVideoComments(youtube, video, seenLocally, setupDateMs)
         allNewItems.push(...newItems)
+        if (unavailable) {
+          unavailableVideoIds.add(video.id)
+          continue
+        }
         metaUpdates[video.id] = {
           commentCount: statsMap[video.id],
           ...(latestCommentId ? { lastCommentId: latestCommentId } : {}),
         }
+      }
+
+      if (unavailableVideoIds.size > 0) {
+        const filteredCache = cachedVideos.filter((video) => !unavailableVideoIds.has(video.id))
+        await DataStore.updateVideosCache(this.guildId, filteredCache)
       }
 
       // persist seen comments and video meta
@@ -275,11 +292,27 @@ class YTCommentsMonitor {
         pageCount++
       } while (pageToken && pageCount < 10)
     } catch (error) {
-      if (error.code === 403 && error.message.includes('disabled comments')) return { newItems, latestCommentId }
+      if (error.code === 403 && error.message.includes('disabled comments')) return { newItems, latestCommentId, unavailable: false }
+
+      if (this._isVideoUnavailableError(error)) {
+        return { newItems, latestCommentId, unavailable: true }
+      }
+
       console.error(`[YT-Checker] Guild #${this.guildId}: Error checking comments for video id=${videoId}:\n`.red, error.message)
     }
 
-    return { newItems, latestCommentId }
+    return { newItems, latestCommentId, unavailable: false }
+  }
+
+  _isVideoUnavailableError(error) {
+    const code = Number(error?.code)
+    const message = String(error?.message || '').toLowerCase()
+    const reason = String(error?.errors?.[0]?.reason || '').toLowerCase()
+
+    if (code === 404) return true
+    if (reason === 'videonotfound') return true
+
+    return message.includes('videoid') && message.includes('could not be found')
   }
 
   async _batchFetchStatistics(youtube, videos) {
