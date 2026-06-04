@@ -16,7 +16,7 @@ module.exports = async (interaction) => {
 
   const botMember = interaction.guild.members.me
   const permissions = voiceChannel.permissionsFor(botMember)
-  const missingPerms = requiredPerms.filter((perm) => !permissions.has(perm))
+  const missingPerms = requiredPerms.filter((perm) => !permissions?.has(perm))
 
   if (missingPerms.length > 0) {
     const missingNames = missingPerms.map((perm) => `\`${permissionDisplayNames[perm] || perm}\``).join(', ')

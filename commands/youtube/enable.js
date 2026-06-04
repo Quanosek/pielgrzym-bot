@@ -1,4 +1,4 @@
-const { EmbedBuilder, MessageFlags } = require('discord.js')
+const { EmbedBuilder } = require('discord.js')
 
 const { youtube } = require('../../config/youtube')
 const YTVideosCache = require('../../services/yt-videos-cache')
@@ -7,6 +7,8 @@ const GuildConfig = require('../../utils/guild-config')
 module.exports = async (interaction) => {
   const guildId = interaction.guildId
   const config = await GuildConfig.getConfig(guildId)
+
+  await interaction.deferReply()
 
   // Disable currently enabled monitoring if exists
   if (config?.ytMonitoring?.enabled) {
@@ -37,9 +39,8 @@ module.exports = async (interaction) => {
   }
 
   if (!youtubeChannel) {
-    return await interaction.reply({
+    return await interaction.editReply({
       content: `❌ Nie znaleziono kanału YouTube o nazwie "${channelName}"! Upewnij się, że podana nazwa kanału jest poprawna.`,
-      flags: MessageFlags.Ephemeral,
     })
   }
 
@@ -54,7 +55,7 @@ module.exports = async (interaction) => {
 
   // Return configured channel message
   const embed = new EmbedBuilder()
-    .setColor('#ff0033')
+    .setColor('#9b582e')
     .setTitle('🔎 Monitorowanie kanału YouTube zostało włączone!')
     .setThumbnail(youtubeChannel.snippet.thumbnails.high.url)
     .setDescription('Teraz będziesz otrzymywać powiadomienia o nowych filmach i komentarzach z wybranego kanału.')
@@ -64,5 +65,5 @@ module.exports = async (interaction) => {
     })
     .setTimestamp()
 
-  return await interaction.reply({ embeds: [embed] })
+  return await interaction.editReply({ embeds: [embed] })
 }

@@ -19,12 +19,10 @@
 - Voice Permissions
   - Connect
 
-https://discord.com/oauth2/authorize?client_id=1467574765513609399&permissions=2417052785&integration_type=0&scope=bot
-
 ### How to run source code locally:
 
 - [Node.js](https://nodejs.org/en/download) >= 24 required
-- [pnpm package manager](https://pnpm.io/installation) >= 10 required
+- [pnpm package manager](https://pnpm.io/installation) >= 11 required
 
 ```bash
 pnpm install && pnpm dev

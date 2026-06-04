@@ -1,0 +1,9 @@
+{
+  "cSpell.words": ["zasobybiblijne"],
+  "files.readonlyInclude": {
+    "logs/": true,
+    "node_modules/": true,
+    "pnpm-lock.yaml": true,
+    "pnpm-workspace.yaml": true
+  }
+}

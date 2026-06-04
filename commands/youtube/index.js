@@ -103,7 +103,7 @@ module.exports = {
       subcommand
         .setName('status')
         .setDescription('Pokaż obecny status monitorowania (tylko administrator)')
-        .addBooleanOption((option) => option.setName('ephemeral').setDescription('Czy wiadomość ma być widoczna tylko dla Ciebie (False)')),
+        .addBooleanOption((option) => option.setName('ephemeral').setDescription('Czy wiadomość ma być widoczna tylko dla Ciebie')),
     ),
 
   async execute(interaction) {

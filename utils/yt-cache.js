@@ -2,8 +2,22 @@ const fs = require('node:fs').promises
 const path = require('node:path')
 
 const DATA_FILE = path.join(__dirname, '../data/yt-cache.min.json')
+const EMPTY_GUILD_CACHE = {
+  seenComments: [],
+  videosCache: [],
+  videosMeta: {},
+}
 
 class DataStore {
+  static _normalizeGuildData(guildData = {}) {
+    const meta = guildData.videosMeta
+    return {
+      seenComments: Array.isArray(guildData.seenComments) ? guildData.seenComments : [],
+      videosCache: Array.isArray(guildData.videosCache) ? guildData.videosCache : [],
+      videosMeta: meta !== null && typeof meta === 'object' && !Array.isArray(meta) ? meta : {},
+    }
+  }
+
   static async _ensureDataFile() {
     try {
       await fs.access(DATA_FILE)
@@ -24,13 +38,11 @@ class DataStore {
     const allData = JSON.parse(data)
 
     if (guildId) {
-      return (
-        allData[guildId] || {
-          lastVideoId: null,
-          seenComments: [],
-          videosCache: [],
-        }
-      )
+      const guildData = allData[guildId] || EMPTY_GUILD_CACHE
+      return {
+        ...EMPTY_GUILD_CACHE,
+        ...this._normalizeGuildData(guildData),
+      }
     }
 
     return allData
@@ -45,16 +57,17 @@ class DataStore {
     const allData = await this.getData()
 
     if (!allData[guildId]) {
-      allData[guildId] = {
-        lastVideoId: null,
-        seenComments: [],
-        videosCache: [],
-      }
+      allData[guildId] = { ...EMPTY_GUILD_CACHE }
     }
 
+    const currentData = this._normalizeGuildData(allData[guildId])
+
     allData[guildId] = {
-      ...allData[guildId],
-      ...updates,
+      ...currentData,
+      ...this._normalizeGuildData({
+        ...currentData,
+        ...updates,
+      }),
     }
 
     await this._saveData(allData)
@@ -66,14 +79,27 @@ class DataStore {
     })
   }
 
-  static async updateLastVideoId(guildId, videoId, snippet) {
-    const guildData = await this.getData(guildId)
-    const videoExists = guildData.videosCache.some((video) => video.id === videoId)
+  static async getVideosMeta(guildId) {
+    const data = await this.getData(guildId)
+    return data.videosMeta || {}
+  }
 
-    await this.updateGuildData(guildId, {
-      lastVideoId: videoId,
-      videosCache: videoExists ? guildData.videosCache : [{ id: videoId, snippet }, ...guildData.videosCache],
-    })
+  static async updateVideosMeta(guildId, metaUpdates) {
+    const allData = await this.getData()
+    if (!allData[guildId]) allData[guildId] = { ...EMPTY_GUILD_CACHE }
+    const current = this._normalizeGuildData(allData[guildId])
+
+    allData[guildId] = {
+      ...current,
+      videosMeta: {
+        ...current.videosMeta,
+        ...Object.fromEntries(
+          Object.entries(metaUpdates).map(([videoId, update]) => [videoId, { ...(current.videosMeta[videoId] || {}), ...update }]),
+        ),
+      },
+    }
+
+    await this._saveData(allData)
   }
 
   static async addSeenComment(guildId, commentId) {

@@ -1,7 +1,5 @@
-const { getYouTubeConfig } = require('../config/youtube')
+const { getYouTubeConfig, getUploadsPlaylistId } = require('../config/youtube')
 const DataStore = require('../utils/yt-cache')
-
-const MAX_VIDEOS_TO_CACHE = 100
 
 class YTVideosCache {
   constructor(client, guildId) {
@@ -19,45 +17,45 @@ class YTVideosCache {
 
       const { youtube, youtubeChannel } = config
 
+      const uploadsPlaylistId = getUploadsPlaylistId(youtubeChannel.id)
+      if (!uploadsPlaylistId) {
+        console.error(`[YT-Checker] Guild #${this.guildId}: Could not derive uploads playlist for channel ${youtubeChannel.id}`.yellow)
+        return
+      }
+
       let allVideos = []
       let nextPageToken = null
       let pageCount = 0
 
+      // paginate all uploads playlist pages
       do {
-        const videosResponse = await youtube.search.list({
-          part: 'id,snippet',
-          channelId: youtubeChannel.id,
-          type: 'video',
-          order: 'date',
-          maxResults: 50, // max allowed by YouTube API
+        const videosResponse = await youtube.playlistItems.list({
+          part: 'snippet,contentDetails',
+          playlistId: uploadsPlaylistId,
+          maxResults: 50,
           pageToken: nextPageToken,
         })
 
         const items = videosResponse.data.items || []
         if (items.length > 0) {
-          allVideos.push(...items.map((item) => ({ id: item.id.videoId, snippet: item.snippet })))
+          allVideos.push(
+            ...items.map((item) => ({
+              id: item.contentDetails.videoId,
+              snippet: {
+                ...item.snippet,
+                publishedAt: item.contentDetails.videoPublishedAt || item.snippet.publishedAt,
+              },
+            })),
+          )
         }
 
         pageCount++
         console.log(`[YT-Checker] Guild #${this.guildId}: Fetched page ${pageCount}: ${items.length} videos`.gray)
 
-        if (allVideos.length >= MAX_VIDEOS_TO_CACHE) {
-          allVideos = allVideos.slice(0, MAX_VIDEOS_TO_CACHE)
-          break
-        }
-
         nextPageToken = videosResponse.data.nextPageToken
       } while (nextPageToken)
 
       await DataStore.updateVideosCache(this.guildId, allVideos)
-
-      if (allVideos.length > 0) {
-        const data = await DataStore.getData(this.guildId)
-        if (data.lastVideoId === null) {
-          await DataStore.updateLastVideoId(this.guildId, allVideos[0].id, allVideos[0].snippet)
-          console.log(`[YT-Checker] Guild #${this.guildId}: Set initial lastVideoId to ${allVideos[0].id}`.cyan)
-        }
-      }
 
       console.log(`[YT-Checker] Guild #${this.guildId}: Cache updated for ${allVideos.length} videos (${pageCount} pages)!`.cyan)
     } catch (error) {

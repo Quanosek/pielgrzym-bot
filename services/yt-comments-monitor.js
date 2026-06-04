@@ -1,9 +1,14 @@
 const { EmbedBuilder } = require('discord.js')
 const he = require('he')
-const moment = require('moment')
 
 const { getYouTubeConfig } = require('../config/youtube')
 const DataStore = require('../utils/yt-cache')
+
+const EMBED_DESCRIPTION_LIMIT = 4096 - 5
+const MAX_TRACKED_COMMENT_IDS = 10000
+const FULL_SCAN_MAX_VIDEOS = 100 // active window: top N by index
+const FULL_SCAN_AGE_DAYS = 60 // active window: max age in days
+const FULL_SCAN_AGE_MS = FULL_SCAN_AGE_DAYS * 24 * 60 * 60 * 1000
 
 class YTCommentsMonitor {
   constructor(client, guildId) {
@@ -20,6 +25,7 @@ class YTCommentsMonitor {
       }
 
       const { youtube, notifications, setupDate, youtubeChannel } = config
+      const setupDateMs = this._resolveSetupDateMs(setupDate)
       const notificationChannelId = notifications?.activityChannelId
 
       if (!notificationChannelId) {
@@ -34,110 +40,350 @@ class YTCommentsMonitor {
       }
 
       const data = await DataStore.getData(this.guildId)
-      if (!data.lastCommentsCheck) data.lastCommentsCheck = {}
+      const seenLocally = new Set(data.seenComments || [])
 
+      const allNewItems = []
       const now = Date.now()
 
-      const newestVideos = cachedVideos.slice(0, 100)
+      // active window: recent ≤60d or top 100
+      const activeVideos = cachedVideos.filter((v, i) => {
+        const publishedAt = new Date(v.snippet?.publishedAt).getTime()
+        return (Number.isFinite(publishedAt) && now - publishedAt <= FULL_SCAN_AGE_MS) || i < FULL_SCAN_MAX_VIDEOS
+      })
 
-      const olderVideosSorted = cachedVideos
-        .slice(100)
-        .map((video) => ({
-          ...video,
-          lastCheck: data.lastCommentsCheck[video.id] || 0,
-        }))
-        .sort((a, b) => a.lastCheck - b.lastCheck)
-
-      const olderVideos = olderVideosSorted.slice(0, Math.ceil(olderVideosSorted.length / 48) || 1)
-
-      const videosToCheck = [...newestVideos, ...olderVideos]
-      const allNewComments = []
-
-      for (const video of videosToCheck) {
-        const newComments = await this._getNewCommentsForVideo(video.id, video.snippet.title, setupDate, youtube)
-        allNewComments.push(...newComments)
-        data.lastCommentsCheck[video.id] = now
+      for (const video of activeVideos) {
+        const { newItems } = await this._scanVideoComments(youtube, video, seenLocally, setupDateMs)
+        allNewItems.push(...newItems)
       }
 
-      await DataStore.updateGuildData(this.guildId, { lastCommentsCheck: data.lastCommentsCheck })
+      await DataStore.updateGuildData(this.guildId, {
+        seenComments: [...seenLocally].slice(0, MAX_TRACKED_COMMENT_IDS),
+      })
 
-      allNewComments.sort((a, b) => new Date(a.comment.publishedAt) - new Date(b.comment.publishedAt))
+      if (allNewItems.length === 0) return
 
-      for (const { commentId, comment, videoId, videoTitle } of allNewComments) {
-        await this._sendNotification(commentId, comment, videoId, videoTitle, youtubeChannel.id, notificationChannelId)
-        await DataStore.addSeenComment(this.guildId, commentId)
+      // oldest first
+      allNewItems.sort((a, b) => new Date(a.comment.publishedAt) - new Date(b.comment.publishedAt))
+
+      for (const item of allNewItems) {
+        await this._sendNotification(item, youtubeChannel.id, notificationChannelId)
       }
     } catch (error) {
       console.error(`[YT-Checker] Guild #${this.guildId}: Error checking comments:\n`.red, error.message)
     }
   }
 
-  async _getNewCommentsForVideo(videoId, videoTitle, setupDate, youtube) {
+  async checkOldVideosDiagnostic() {
     try {
-      const commentsResponse = await youtube.commentThreads.list({
-        part: 'snippet',
-        videoId,
-        order: 'time',
-        maxResults: 100, // max allowed by YouTube API
-      })
+      const config = await getYouTubeConfig(this.guildId)
+      if (!config) return
 
-      const items = commentsResponse.data.items || []
-      if (items.length === 0) return []
+      const { youtube, notifications, setupDate, youtubeChannel } = config
+      const setupDateMs = this._resolveSetupDateMs(setupDate)
+      const notificationChannelId = notifications?.activityChannelId
+      if (!notificationChannelId) return
+
+      const cachedVideos = await DataStore.getVideosCache(this.guildId)
+      if (cachedVideos.length === 0) return
 
       const data = await DataStore.getData(this.guildId)
-      const newComments = []
+      const seenLocally = new Set(data.seenComments || [])
 
-      for (const item of items) {
-        const commentId = item.id
-        const comment = item.snippet.topLevelComment.snippet
+      // fast lookup set for active window ids
+      const now = Date.now()
+      const activeVideoIds = new Set(
+        cachedVideos
+          .filter((v, i) => {
+            const publishedAt = new Date(v.snippet?.publishedAt).getTime()
+            return (Number.isFinite(publishedAt) && now - publishedAt <= FULL_SCAN_AGE_MS) || i < FULL_SCAN_MAX_VIDEOS
+          })
+          .map((v) => v.id),
+      )
 
-        if (data.seenComments.includes(commentId)) continue
+      // outside active window
+      const oldVideos = cachedVideos.filter((v) => !activeVideoIds.has(v.id))
 
-        if (moment(comment.publishedAt).isBefore(moment(setupDate))) {
-          await DataStore.addSeenComment(this.guildId, commentId)
+      if (oldVideos.length === 0) {
+        console.log(`[YT-Checker] Guild #${this.guildId}: No old videos to diagnose`.gray)
+        return
+      }
+
+      console.log(`[YT-Checker] Guild #${this.guildId}: Diagnosing ${oldVideos.length} old video(s)`.gray)
+
+      // phase 1: batch stats
+      const statsMap = await this._batchFetchStatistics(youtube, oldVideos)
+      const videosMeta = await DataStore.getVideosMeta(this.guildId)
+
+      // phase 2: determine which videos need a full scan
+      const videosNeedingScan = []
+
+      for (const video of oldVideos) {
+        const meta = videosMeta[video.id]
+        const currentCount = statsMap[video.id]
+
+        // skip unavailable (deleted/private/comments disabled)
+        if (currentCount === null || currentCount === undefined) continue
+
+        // count changed or no baseline
+        if (!meta || currentCount !== meta.commentCount) {
+          videosNeedingScan.push(video)
           continue
         }
 
-        newComments.push({
-          commentId,
-          comment,
-          videoId,
-          videoTitle,
-        })
+        // latest id shifted (same count but rotated)
+        if (meta.lastCommentId) {
+          try {
+            const quickResp = await youtube.commentThreads.list({
+              part: 'id',
+              videoId: video.id,
+              order: 'time',
+              maxResults: 1,
+            })
+            const latestId = quickResp.data.items?.[0]?.id
+            if (latestId && latestId !== meta.lastCommentId) {
+              videosNeedingScan.push(video)
+            }
+          } catch {
+            // ignore (comments disabled after last scan)
+          }
+        }
       }
 
-      return newComments
+      if (videosNeedingScan.length === 0) {
+        console.log(`[YT-Checker] Guild #${this.guildId}: No changes detected in old videos`.gray)
+        return
+      }
+
+      console.log(`[YT-Checker] Guild #${this.guildId}: ${videosNeedingScan.length} old video(s) changed, running full scan`.gray)
+
+      // phase 3: full scan changed videos
+      const allNewItems = []
+      const metaUpdates = {}
+
+      for (const video of videosNeedingScan) {
+        const { newItems, latestCommentId } = await this._scanVideoComments(youtube, video, seenLocally, setupDateMs)
+        allNewItems.push(...newItems)
+        metaUpdates[video.id] = {
+          commentCount: statsMap[video.id],
+          ...(latestCommentId ? { lastCommentId: latestCommentId } : {}),
+        }
+      }
+
+      // persist seen comments and video meta
+      await DataStore.updateGuildData(this.guildId, {
+        seenComments: [...seenLocally].slice(0, MAX_TRACKED_COMMENT_IDS),
+      })
+
+      if (Object.keys(metaUpdates).length > 0) {
+        await DataStore.updateVideosMeta(this.guildId, metaUpdates)
+      }
+
+      if (allNewItems.length === 0) return
+
+      // phase 4: send chronologically (oldest first)
+      allNewItems.sort((a, b) => new Date(a.comment.publishedAt) - new Date(b.comment.publishedAt))
+
+      for (const item of allNewItems) {
+        await this._sendNotification(item, youtubeChannel.id, notificationChannelId)
+      }
     } catch (error) {
-      if (error.code === 403 && error.message.includes('disabled comments')) return []
-      console.error(`[YT-Checker] Guild #${this.guildId}: Error checking comments for video id=${videoId}:\n`.red, error.message)
-      return []
+      console.error(`[YT-Checker] Guild #${this.guildId}: Error in old videos diagnostic:\n`.red, error.message)
     }
   }
 
-  async _sendNotification(commentId, comment, videoId, videoTitle, channelId, notificationChannelId) {
-    const decodedText = he
-      .decode(comment.textDisplay)
-      .replace(/<a[^>]*>(.*?)<\/a>/gi, '$1')
-      .replace(/(<br\s*\/?>\s*)+/gi, '; ')
+  async _scanVideoComments(youtube, video, seenLocally, setupDateMs) {
+    const videoId = video.id
+    const videoTitle = video.snippet.title
+    const newItems = []
+    let latestCommentId = null
 
-    const EMBED_DESCRIPTION_LIMIT = 4096 - 5
-    const commentText = decodedText.length > EMBED_DESCRIPTION_LIMIT ? decodedText.substring(0, EMBED_DESCRIPTION_LIMIT) + '...' : decodedText
+    // baseline for early-exit
+    const seenAtStart = new Set(seenLocally)
+
+    let pageToken
+    let pageCount = 0
+
+    try {
+      do {
+        const commentsResponse = await youtube.commentThreads.list({
+          part: 'snippet,replies',
+          videoId,
+          order: 'time',
+          maxResults: 100,
+          pageToken,
+        })
+
+        const items = commentsResponse.data.items || []
+        let lastTopLevelId = null
+
+        // track newest comment id (first item on first page)
+        if (pageCount === 0 && items.length > 0) {
+          latestCommentId = items[0].snippet.topLevelComment.id
+        }
+
+        for (const item of items) {
+          const topLevel = item.snippet.topLevelComment
+          const topLevelId = topLevel.id
+          const topLevelSnippet = topLevel.snippet
+          const totalReplies = Number(item.snippet.totalReplyCount || 0)
+          lastTopLevelId = topLevelId
+
+          if (!seenLocally.has(topLevelId)) {
+            // mark even if pre-setup — enables early-exit on next run
+            seenLocally.add(topLevelId)
+
+            if (this._isOnOrAfterSetupDate(topLevelSnippet.publishedAt, setupDateMs)) {
+              newItems.push({
+                kind: 'top-level',
+                commentId: topLevelId,
+                comment: topLevelSnippet,
+                videoId,
+                videoTitle,
+              })
+            }
+          }
+
+          if (totalReplies > 0) {
+            let replies = item.replies?.comments || []
+            if (totalReplies > replies.length) {
+              replies = await this._fetchAllReplies(youtube, topLevelId)
+            }
+
+            for (const reply of replies) {
+              const replyId = reply.id
+              if (!this._isOnOrAfterSetupDate(reply.snippet?.publishedAt, setupDateMs) || seenLocally.has(replyId)) continue
+
+              newItems.push({
+                kind: 'reply',
+                commentId: replyId,
+                comment: reply.snippet,
+                videoId,
+                videoTitle,
+                parentCommentId: topLevelId,
+                parentAuthor: topLevelSnippet.authorDisplayName,
+                parentText: topLevelSnippet.textDisplay,
+              })
+              seenLocally.add(replyId)
+            }
+          }
+        }
+
+        // all further pages already processed
+        if (lastTopLevelId && seenAtStart.has(lastTopLevelId)) break
+
+        pageToken = commentsResponse.data.nextPageToken
+        pageCount++
+      } while (pageToken && pageCount < 10)
+    } catch (error) {
+      if (error.code === 403 && error.message.includes('disabled comments')) return { newItems, latestCommentId }
+      console.error(`[YT-Checker] Guild #${this.guildId}: Error checking comments for video id=${videoId}:\n`.red, error.message)
+    }
+
+    return { newItems, latestCommentId }
+  }
+
+  async _batchFetchStatistics(youtube, videos) {
+    const statsMap = {}
+
+    for (let i = 0; i < videos.length; i += 50) {
+      const chunk = videos.slice(i, i + 50)
+      const ids = chunk.map((v) => v.id).join(',')
+
+      try {
+        const resp = await youtube.videos.list({ part: 'statistics', id: ids })
+
+        for (const item of resp.data.items || []) {
+          const cc = item.statistics?.commentCount
+          statsMap[item.id] = cc !== undefined ? Number(cc) : null
+        }
+
+        // missing from response = deleted/private
+        for (const video of chunk) {
+          if (!(video.id in statsMap)) statsMap[video.id] = null
+        }
+      } catch (error) {
+        console.error(`[YT-Checker] Guild #${this.guildId}: Error fetching statistics batch:\n`.red, error.message)
+      }
+    }
+
+    return statsMap
+  }
+
+  async _fetchAllReplies(youtube, parentId) {
+    const allReplies = []
+    let pageToken
+    let pageCount = 0
+
+    try {
+      do {
+        const response = await youtube.comments.list({
+          part: 'snippet',
+          parentId,
+          maxResults: 100,
+          pageToken,
+        })
+        allReplies.push(...(response.data.items || []))
+        pageToken = response.data.nextPageToken
+        pageCount++
+      } while (pageToken && pageCount < 10)
+    } catch (error) {
+      console.error(`[YT-Checker] Guild #${this.guildId}: Error fetching replies for ${parentId}:\n`.red, error.message)
+    }
+
+    return allReplies
+  }
+
+  _isOnOrAfterSetupDate(publishedAt, setupDateMs) {
+    const publishedAtMs = new Date(publishedAt).getTime()
+    if (!Number.isFinite(publishedAtMs) || !Number.isFinite(setupDateMs) || setupDateMs <= 0) return true
+    return publishedAtMs >= setupDateMs
+  }
+
+  _resolveSetupDateMs(setupDate) {
+    const numeric = Number(setupDate)
+    if (Number.isFinite(numeric) && numeric > 0) return numeric
+
+    const parsed = new Date(setupDate).getTime()
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : 0
+  }
+
+  async _sendNotification(item, channelId, notificationChannelId) {
+    const { kind, comment, videoId, videoTitle, commentId } = item
+    const isReply = kind === 'reply'
 
     const isChannelAuthor = comment.authorChannelId && comment.authorChannelId.value === channelId
 
+    const color = isChannelAuthor ? '#ff0132' : isReply ? '#cd9379' : '#ecb172'
+    const title = isReply ? 'Dodano nową odpowiedź na komentarz! ↩️' : 'Dodano nowy komentarz! 💬'
+
+    const commentText = this._formatCommentText(comment.textDisplay)
+    const formattedTimestamp = this._formatDiscordTimestamp(comment.publishedAt)
+
+    const fields = []
+
+    if (isReply) {
+      const parentPreviewRaw = this._formatCommentText(item.parentText || '')
+      const parentPreview = parentPreviewRaw.length > 200 ? parentPreviewRaw.substring(0, 200) + '...' : parentPreviewRaw
+
+      fields.push({
+        name: `Odpowiedź na komentarz: ${item.parentAuthor}`,
+        value: parentPreview ? `> ${parentPreview}` : '*(brak treści)*',
+      })
+    }
+
+    fields.push({ name: 'Film', value: `[${videoTitle}](https://www.youtube.com/watch?v=${videoId})` })
+    fields.push({ name: 'Data dodania', value: formattedTimestamp })
+
     const embed = new EmbedBuilder()
-      .setColor(isChannelAuthor ? '#ff0033' : '#eaaa6a')
+      .setColor(color)
       .setAuthor({
         name: comment.authorDisplayName,
         iconURL: comment.authorProfileImageUrl,
       })
-      .setTitle('Pojawił się nowy komentarz! 💬')
+      .setTitle(title)
       .setURL(`https://www.youtube.com/watch?v=${videoId}&lc=${commentId}`)
       .setDescription(`"${commentText}"`)
-      .addFields(
-        { name: 'Film', value: `[${videoTitle}](https://www.youtube.com/watch?v=${videoId})` },
-        { name: 'Data', value: new Date(comment.publishedAt).toLocaleString('pl-PL') },
-      )
+      .addFields(fields)
 
     const guild = this.client.guilds.cache.get(this.guildId)
     if (!guild) return
@@ -149,6 +395,21 @@ class YTCommentsMonitor {
     }
 
     await channel.send({ embeds: [embed] })
+  }
+
+  _formatCommentText(textDisplay) {
+    const decoded = he
+      .decode(textDisplay || '')
+      .replace(/<a[^>]*>(.*?)<\/a>/gi, '$1')
+      .replace(/(<br\s*\/?>\s*)+/gi, '; ')
+    return decoded.length > EMBED_DESCRIPTION_LIMIT ? decoded.substring(0, EMBED_DESCRIPTION_LIMIT) + '...' : decoded
+  }
+
+  _formatDiscordTimestamp(dateInput) {
+    const timestampMs = new Date(dateInput).getTime()
+    if (!Number.isFinite(timestampMs)) return 'Brak daty'
+    const timestampSeconds = Math.floor(timestampMs / 1000)
+    return `<t:${timestampSeconds}:F> • <t:${timestampSeconds}:R>`
   }
 }
 

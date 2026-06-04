@@ -57,7 +57,7 @@ class YTSubsCounterMonitor {
 
       const requiredPerms = [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.Connect, PermissionFlagsBits.ManageChannels]
       const permissions = channel.permissionsFor(guild.members.me)
-      const missingPerms = requiredPerms.filter((perm) => !permissions.has(perm))
+      const missingPerms = requiredPerms.filter((perm) => !permissions?.has(perm))
       if (missingPerms.length > 0) {
         console.log(`[YT-Checker] Guild #${this.guildId}: Bot lost permissions on subs counter channel, disabling`.yellow)
         await this._disableCounter(guildConfig)

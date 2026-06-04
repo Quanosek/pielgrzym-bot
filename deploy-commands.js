@@ -29,24 +29,20 @@ const rest = new REST().setToken(process.env.DISCORD_TOKEN)
 
 const scope = process.argv[2]
 
+// Discord requires registering commands for specific guild (faster) or globally for all guilds (slower)
+// Both methods can be used at the same time!
+
 const deployCommands = async () => {
   try {
-    if (!scope) {
-      console.log(`Started refreshing ${commands.length} application (/) commands (guild + global).`.cyan)
+    if (scope === 'clear') {
+      console.log('Started clearing all application (/) commands (guild + global).'.cyan)
 
-      await rest.put(Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID), {
-        body: [],
-      })
+      await rest.put(Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID), { body: [] })
       console.log('-> Successfully deleted all guild commands.')
-      await rest.put(Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID), {
-        body: commands,
-      })
-
       await rest.put(Routes.applicationCommands(process.env.CLIENT_ID), { body: [] })
       console.log('-> Successfully deleted all global commands.')
-      await rest.put(Routes.applicationCommands(process.env.CLIENT_ID), { body: commands })
 
-      console.log('Successfully reloaded all guild + global application (/) commands!'.cyan)
+      console.log('Successfully cleared all guild + global application (/) commands!'.cyan)
     } else {
       console.log(`Started refreshing ${commands.length} application (/) commands (${scope}).`.cyan)
 
@@ -59,7 +55,7 @@ const deployCommands = async () => {
         console.log('-> Successfully deleted all guild commands.')
         await rest.put(Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID), { body: commands })
       } else {
-        throw new Error(`Invalid scope "${scope}". Use "guild" or "global".`)
+        throw new Error(`Invalid scope "${scope}". Use "guild", "global" or "clear".`)
       }
 
       console.log(`Successfully reloaded all ${scope} application (/) commands!`.cyan)

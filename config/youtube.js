@@ -6,6 +6,11 @@ const youtube = google.youtube({
   auth: process.env.YOUTUBE_API_KEY,
 })
 
+function getUploadsPlaylistId(channelId) {
+  if (typeof channelId !== 'string' || !channelId.startsWith('UC')) return null
+  return 'UU' + channelId.slice(2)
+}
+
 async function getYouTubeConfig(guildId) {
   const config = await GuildConfig.getConfig(guildId)
   if (!config?.ytMonitoring?.enabled) return null
@@ -24,4 +29,5 @@ async function getYouTubeConfig(guildId) {
 module.exports = {
   youtube,
   getYouTubeConfig,
+  getUploadsPlaylistId,
 }

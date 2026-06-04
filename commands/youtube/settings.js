@@ -120,7 +120,7 @@ module.exports = async (interaction) => {
   const ytMonitoring = config?.ytMonitoring || {}
 
   const container = new ContainerBuilder()
-    .setAccentColor(resolveColor('#ff0033'))
+    .setAccentColor(resolveColor('#9b582e'))
     .addTextDisplayComponents((textDisplay) => textDisplay.setContent('⚙️ **Ustawienia monitoringu kanału Youtube**'))
 
   for (const setting of SETTINGS_CHANNELS) {

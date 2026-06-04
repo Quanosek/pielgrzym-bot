@@ -1,9 +1,10 @@
-const cron = require('node-cron')
+﻿const cron = require('node-cron')
 const { Events } = require('discord.js')
 const GuildConfig = require('../utils/guild-config')
 
 const YTVideosMonitor = require('../services/yt-videos-monitor')
 const YTCommentsMonitor = require('../services/yt-comments-monitor')
+const YTVideosCache = require('../services/yt-videos-cache')
 
 const YTSubsCounterMonitor = require('../services/yt-subs-counter-monitor')
 const YTViewsCounterMonitor = require('../services/yt-views-counter-monitor')
@@ -50,9 +51,24 @@ module.exports = {
       return monitoredGuildsCache
     }
 
+    // Refresh local database cache
+    cron.schedule(
+      '0 4 * * *',
+      async () => {
+        console.log('[YT-Checker] ⬇️ Refreshing videos cache'.gray)
+        const monitoredGuilds = await getMonitoredGuilds()
+
+        for (const guildId of monitoredGuilds) {
+          const cache = new YTVideosCache(client, guildId)
+          await cache.refreshVideosCache()
+        }
+      },
+      { timezone },
+    )
+
     // Check for new YouTube videos
     cron.schedule(
-      '5 * * * *',
+      '*/10 * * * *',
       async () => {
         console.log('[YT-Checker] 🎬 Checking for new videos'.gray)
         const monitoredGuilds = await getMonitoredGuilds()
@@ -65,9 +81,9 @@ module.exports = {
       { timezone },
     )
 
-    // Check for new YouTube comments
+    // Check for new YouTube comments (up to 60 days old)
     cron.schedule(
-      '1,31 * * * *',
+      '*/30 * * * *',
       async () => {
         console.log('[YT-Checker] 💬 Checking for new comments'.gray)
         const monitoredGuilds = await getMonitoredGuilds()
@@ -75,6 +91,21 @@ module.exports = {
         for (const guildId of monitoredGuilds) {
           const monitor = new YTCommentsMonitor(client, guildId)
           await monitor.checkNewComments()
+        }
+      },
+      { timezone },
+    )
+
+    // Diagnostic scan of older YouTube videos (over 60 days)
+    cron.schedule(
+      '0 9 * * *',
+      async () => {
+        console.log('[YT-Checker] 🔍 Diagnostic scan of older videos'.gray)
+        const monitoredGuilds = await getMonitoredGuilds()
+
+        for (const guildId of monitoredGuilds) {
+          const monitor = new YTCommentsMonitor(client, guildId)
+          await monitor.checkOldVideosDiagnostic()
         }
       },
       { timezone },

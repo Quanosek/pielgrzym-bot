@@ -1,8 +1,10 @@
 const js = require('@eslint/js')
-const n = require('eslint-plugin-n')
+const nPlugin = require('eslint-plugin-n')
 const globals = require('globals')
 const prettier = require('eslint-plugin-prettier')
 const prettierConfig = require('eslint-config-prettier')
+
+const n = nPlugin.default || nPlugin
 
 module.exports = [
   js.configs.recommended,

@@ -1,10 +1,11 @@
 {
   "name": "pielgrzym-bot",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "Dedicated Discord bot for zbawienie.pl and zasobybiblijne.org websites",
   "main": "index.js",
   "scripts": {
     "start": "nodemon",
+    "deploy:clear": "node deploy-commands.js clear",
     "deploy:guild": "node deploy-commands.js guild",
     "deploy:global": "node deploy-commands.js global",
     "format": "prettier --write .",
@@ -28,29 +29,29 @@
   "license": "ISC",
   "engines": {
     "node": ">=24",
-    "pnpm": ">=10"
+    "pnpm": ">=11"
   },
   "dependencies": {
     "bufferutil": "^4.1.0",
     "colors": "^1.4.0",
-    "discord.js": "^14.26.3",
+    "discord.js": "^14.26.4",
     "dotenv": "^17.4.2",
-    "googleapis": "^170.1.0",
+    "googleapis": "^173.0.0",
     "he": "^1.2.0",
     "moment": "^2.30.1",
     "node-cron": "^4.2.1",
     "zlib-sync": "^0.1.10"
   },
   "devDependencies": {
-    "@eslint/js": "^9.39.4",
-    "eslint": "^9.39.4",
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.4.1",
     "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-n": "^17.24.0",
-    "eslint-plugin-prettier": "^5.5.5",
-    "globals": "^17.5.0",
+    "eslint-plugin-n": "^18.0.1",
+    "eslint-plugin-prettier": "^5.5.6",
+    "globals": "^17.6.0",
     "husky": "^9.1.7",
     "nodemon": "^3.1.14",
-    "prettier": "3.8.0"
+    "prettier": "3.8.3"
   },
   "nodemonConfig": {
     "ignore": [

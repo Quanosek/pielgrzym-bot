@@ -33,10 +33,16 @@ module.exports = async (interaction) => {
     countersFields.push({ name: 'Licznik filmów', value: `<#${counters.videosChannelId}>`, inline: true })
   }
 
+  const thumbnailUrl =
+    youtubeChannel?.snippet?.thumbnails?.high?.url ||
+    youtubeChannel?.snippet?.thumbnails?.medium?.url ||
+    youtubeChannel?.snippet?.thumbnails?.default?.url ||
+    null
+
   const embed = new EmbedBuilder()
-    .setColor('#ff0033')
+    .setColor('#9b582e')
     .setTitle('🔎 Status monitorowania kanału YouTube')
-    .setThumbnail(youtubeChannel.snippet.thumbnails.high.url)
+    .setThumbnail(thumbnailUrl)
     .addFields(
       {
         name: 'Nazwa kanału',
