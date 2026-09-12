@@ -9,6 +9,8 @@ const EMPTY_GUILD_CACHE = {
 }
 
 class DataStore {
+  static _writeQueue = Promise.resolve()
+
   static _normalizeGuildData(guildData = {}) {
     const meta = guildData.videosMeta
     return {
@@ -29,7 +31,15 @@ class DataStore {
 
   static async _saveData(data) {
     await this._ensureDataFile()
-    await fs.writeFile(DATA_FILE, JSON.stringify(data))
+    const tempFile = `${DATA_FILE}.${process.pid}.tmp`
+    await fs.writeFile(tempFile, JSON.stringify(data))
+    await fs.rename(tempFile, DATA_FILE)
+  }
+
+  static _enqueueWrite(operation) {
+    const queuedOperation = this._writeQueue.catch(() => {}).then(operation)
+    this._writeQueue = queuedOperation.catch(() => {})
+    return queuedOperation
   }
 
   static async getData(guildId = null) {
@@ -54,23 +64,25 @@ class DataStore {
   }
 
   static async updateGuildData(guildId, updates) {
-    const allData = await this.getData()
+    await this._enqueueWrite(async () => {
+      const allData = await this.getData()
 
-    if (!allData[guildId]) {
-      allData[guildId] = { ...EMPTY_GUILD_CACHE }
-    }
+      if (!allData[guildId]) {
+        allData[guildId] = { ...EMPTY_GUILD_CACHE }
+      }
 
-    const currentData = this._normalizeGuildData(allData[guildId])
+      const currentData = this._normalizeGuildData(allData[guildId])
 
-    allData[guildId] = {
-      ...currentData,
-      ...this._normalizeGuildData({
+      allData[guildId] = {
         ...currentData,
-        ...updates,
-      }),
-    }
+        ...this._normalizeGuildData({
+          ...currentData,
+          ...updates,
+        }),
+      }
 
-    await this._saveData(allData)
+      await this._saveData(allData)
+    })
   }
 
   static async updateVideosCache(guildId, videos) {
@@ -85,21 +97,23 @@ class DataStore {
   }
 
   static async updateVideosMeta(guildId, metaUpdates) {
-    const allData = await this.getData()
-    if (!allData[guildId]) allData[guildId] = { ...EMPTY_GUILD_CACHE }
-    const current = this._normalizeGuildData(allData[guildId])
+    await this._enqueueWrite(async () => {
+      const allData = await this.getData()
+      if (!allData[guildId]) allData[guildId] = { ...EMPTY_GUILD_CACHE }
+      const current = this._normalizeGuildData(allData[guildId])
 
-    allData[guildId] = {
-      ...current,
-      videosMeta: {
-        ...current.videosMeta,
-        ...Object.fromEntries(
-          Object.entries(metaUpdates).map(([videoId, update]) => [videoId, { ...(current.videosMeta[videoId] || {}), ...update }]),
-        ),
-      },
-    }
+      allData[guildId] = {
+        ...current,
+        videosMeta: {
+          ...current.videosMeta,
+          ...Object.fromEntries(
+            Object.entries(metaUpdates).map(([videoId, update]) => [videoId, { ...(current.videosMeta[videoId] || {}), ...update }]),
+          ),
+        },
+      }
 
-    await this._saveData(allData)
+      await this._saveData(allData)
+    })
   }
 
   static async addSeenComment(guildId, commentId) {
@@ -112,9 +126,11 @@ class DataStore {
   }
 
   static async clearGuildCache(guildId) {
-    const allData = await this.getData()
-    delete allData[guildId]
-    await this._saveData(allData)
+    await this._enqueueWrite(async () => {
+      const allData = await this.getData()
+      delete allData[guildId]
+      await this._saveData(allData)
+    })
   }
 }
 

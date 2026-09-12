@@ -2,6 +2,7 @@ const { PermissionFlagsBits } = require('discord.js')
 
 const { formatNumber } = require('../utils/format-number')
 const GuildConfig = require('../utils/guild-config')
+const YTSubsCounterMonitor = require('./yt-subs-counter-monitor')
 
 class YTVideosCounterMonitor {
   constructor(client, guildId) {
@@ -15,7 +16,9 @@ class YTVideosCounterMonitor {
       const videosChannelId = guildConfig?.ytMonitoring?.counters?.videosChannelId
       if (!videosChannelId) return
 
-      const videos = Number(guildConfig?.ytMonitoring?.youtubeChannel?.statistics?.videoCount)
+      await new YTSubsCounterMonitor(this.client, this.guildId).updateChannelStatistics()
+      const refreshedConfig = await GuildConfig.getConfig(this.guildId)
+      const videos = Number(refreshedConfig?.ytMonitoring?.youtubeChannel?.statistics?.videoCount)
       if (!Number.isFinite(videos)) {
         console.error(`[YT-Checker] Guild #${this.guildId}: Missing cached YouTube videoCount in config`.yellow)
         return

@@ -4,6 +4,8 @@ const path = require('node:path')
 const CONFIG_FILE = path.join(__dirname, '../data/guild-config.min.json')
 
 class GuildConfig {
+  static _writeQueue = Promise.resolve()
+
   static async _ensureConfigFile() {
     try {
       await fs.access(CONFIG_FILE)
@@ -15,7 +17,15 @@ class GuildConfig {
 
   static async _saveConfig(config) {
     await this._ensureConfigFile()
-    await fs.writeFile(CONFIG_FILE, JSON.stringify(config))
+    const tempFile = `${CONFIG_FILE}.${process.pid}.tmp`
+    await fs.writeFile(tempFile, JSON.stringify(config))
+    await fs.rename(tempFile, CONFIG_FILE)
+  }
+
+  static _enqueueWrite(operation) {
+    const queuedOperation = this._writeQueue.catch(() => {}).then(operation)
+    this._writeQueue = queuedOperation.catch(() => {})
+    return queuedOperation
   }
 
   static async getConfig(guildId = null) {
@@ -28,34 +38,40 @@ class GuildConfig {
   }
 
   static async initializeGuildConfig(guild) {
-    const config = await this.getConfig()
+    await this._enqueueWrite(async () => {
+      const config = await this.getConfig()
 
-    if (!config[guild.id]) {
-      config[guild.id] = {
-        guildName: guild.name,
-        ownerId: guild.ownerId,
-        ownerName: guild.ownerId ? (await guild.client.users.fetch(guild.ownerId)).tag : 'Unknown',
+      if (!config[guild.id]) {
+        config[guild.id] = {
+          guildName: guild.name,
+          ownerId: guild.ownerId,
+          ownerName: guild.ownerId ? (await guild.client.users.fetch(guild.ownerId)).tag : 'Unknown',
+        }
+
+        await this._saveConfig(config)
       }
-
-      await this._saveConfig(config)
-    }
+    })
   }
 
   static async deleteGuildConfig(guildId) {
-    const config = await this.getConfig()
-    delete config[guildId]
-    await this._saveConfig(config)
+    await this._enqueueWrite(async () => {
+      const config = await this.getConfig()
+      delete config[guildId]
+      await this._saveConfig(config)
+    })
   }
 
   static async updateGuildConfig(guildId, settings) {
-    const config = await this.getConfig()
+    await this._enqueueWrite(async () => {
+      const config = await this.getConfig()
 
-    config[guildId] = {
-      ...config[guildId],
-      ...settings,
-    }
+      config[guildId] = {
+        ...config[guildId],
+        ...settings,
+      }
 
-    await this._saveConfig(config)
+      await this._saveConfig(config)
+    })
   }
 
   static async enableMonitoring({ guildId, newVideosChannelId, youtubeChannel }) {

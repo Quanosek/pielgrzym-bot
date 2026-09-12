@@ -14,34 +14,8 @@ class YTSubsCounterMonitor {
     try {
       const guildConfig = await GuildConfig.getConfig(this.guildId)
       const subsChannelId = guildConfig?.ytMonitoring?.counters?.subsChannelId
-      if (!subsChannelId) return
-
-      const config = await getYouTubeConfig(this.guildId)
-      if (!config) {
-        console.error(`[YT-Checker] No YouTube config found for guild ${this.guildId}`.yellow)
-        return
-      }
-
-      const { youtube, youtubeChannel } = config
-
-      const channelResponse = await youtube.channels.list({
-        part: 'snippet,statistics',
-        id: youtubeChannel.id,
-      })
-
-      const item = channelResponse?.data?.items?.[0]
-      if (!item?.statistics?.subscriberCount) return
-
-      await GuildConfig.updateGuildConfig(this.guildId, {
-        ytMonitoring: {
-          ...guildConfig?.ytMonitoring,
-          youtubeChannel: {
-            id: youtubeChannel.id,
-            snippet: item.snippet,
-            statistics: item.statistics,
-          },
-        },
-      })
+      const item = await this.updateChannelStatistics()
+      if (!item?.statistics?.subscriberCount || !subsChannelId) return
 
       const subs = item.statistics.subscriberCount
 
@@ -71,6 +45,37 @@ class YTSubsCounterMonitor {
     } catch (error) {
       console.error(`[YT-Checker] Guild #${this.guildId}: Error updating subscriber count:\n`.red, error.message)
     }
+  }
+
+  async updateChannelStatistics() {
+    const guildConfig = await GuildConfig.getConfig(this.guildId)
+    const config = await getYouTubeConfig(this.guildId)
+    if (!config) {
+      console.error(`[YT-Checker] No YouTube config found for guild ${this.guildId}`.yellow)
+      return null
+    }
+
+    const { youtube, youtubeChannel } = config
+    const channelResponse = await youtube.channels.list({
+      part: 'snippet,statistics',
+      id: youtubeChannel.id,
+    })
+
+    const item = channelResponse?.data?.items?.[0]
+    if (!item?.statistics) return null
+
+    await GuildConfig.updateGuildConfig(this.guildId, {
+      ytMonitoring: {
+        ...guildConfig?.ytMonitoring,
+        youtubeChannel: {
+          id: youtubeChannel.id,
+          snippet: item.snippet,
+          statistics: item.statistics,
+        },
+      },
+    })
+
+    return item
   }
 
   async _disableCounter(guildConfig) {
