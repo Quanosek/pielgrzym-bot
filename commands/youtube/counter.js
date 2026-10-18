@@ -41,7 +41,7 @@ module.exports = async (interaction) => {
 
     await interaction.reply(`✅ Ustawiono kanał <#${voiceChannel.id}> jako licznik subskrypcji.`)
 
-    console.log('📊 Updating subscriber count on user demand'.gray)
+    console.log('📊 Updating the subscriber count on request'.gray)
     const monitor = new YTSubsCounterMonitor(interaction.client, guildId)
     await monitor.updateSubscriberCount()
   }
@@ -59,7 +59,7 @@ module.exports = async (interaction) => {
 
     await interaction.reply(`✅ Ustawiono kanał <#${voiceChannel.id}> jako licznik wyświetleń.`)
 
-    console.log('📊 Updating views count on user demand'.gray)
+    console.log('📊 Updating the view count on request'.gray)
     const monitor = new YTViewsCounterMonitor(interaction.client, guildId)
     await monitor.updateViewsCount()
   }
@@ -77,7 +77,7 @@ module.exports = async (interaction) => {
 
     await interaction.reply(`✅ Ustawiono kanał <#${voiceChannel.id}> jako licznik filmów.`)
 
-    console.log('📊 Updating videos count on user demand'.gray)
+    console.log('📊 Updating the video count on request'.gray)
     const monitor = new YTVideosCounterMonitor(interaction.client, guildId)
     await monitor.updateVideosCount()
   }

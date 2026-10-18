@@ -6,7 +6,7 @@ const SETTINGS_CUSTOM_ID_PREFIX = 'youtube-settings'
 const SETTINGS_CHANNELS = [
   {
     id: 'notifications-videos',
-    title: 'Powiadomienia nowych filmów:',
+    title: 'Powiadomienia o nowych filmach:',
     sectionName: 'powiadomienia o nowych filmach',
     group: 'notifications',
     key: 'newVideosChannelId',
@@ -15,7 +15,7 @@ const SETTINGS_CHANNELS = [
   },
   {
     id: 'notifications-activity',
-    title: 'Powiadomienia nowych komentarzy:',
+    title: 'Powiadomienia o nowych komentarzach:',
     sectionName: 'powiadomienia o aktywności',
     group: 'notifications',
     key: 'activityChannelId',
@@ -121,7 +121,7 @@ module.exports = async (interaction) => {
 
   const container = new ContainerBuilder()
     .setAccentColor(resolveColor('#9b582e'))
-    .addTextDisplayComponents((textDisplay) => textDisplay.setContent('⚙️ **Ustawienia monitoringu kanału Youtube**'))
+    .addTextDisplayComponents((textDisplay) => textDisplay.setContent('⚙️ **Ustawienia monitorowania kanału YouTube**'))
 
   for (const setting of SETTINGS_CHANNELS) {
     const defaultChannelId = ytMonitoring?.[setting.group]?.[setting.key]

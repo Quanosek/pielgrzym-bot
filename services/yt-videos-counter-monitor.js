@@ -10,13 +10,13 @@ class YTVideosCounterMonitor {
     this.guildId = guildId
   }
 
-  async updateVideosCount() {
+  async updateVideosCount(refreshStatistics = true) {
     try {
       const guildConfig = await GuildConfig.getConfig(this.guildId)
       const videosChannelId = guildConfig?.ytMonitoring?.counters?.videosChannelId
       if (!videosChannelId) return
 
-      await new YTSubsCounterMonitor(this.client, this.guildId).updateChannelStatistics()
+      if (refreshStatistics) await new YTSubsCounterMonitor(this.client, this.guildId).updateChannelStatistics()
       const refreshedConfig = await GuildConfig.getConfig(this.guildId)
       const videos = Number(refreshedConfig?.ytMonitoring?.youtubeChannel?.statistics?.videoCount)
       if (!Number.isFinite(videos)) {
@@ -44,6 +44,7 @@ class YTVideosCounterMonitor {
       }
 
       const newName = `Filmy: ${formatNumber(videos, { style: 'spaced' })}`
+      if (channel.name === newName) return
       await channel.setName(newName).catch((err) => {
         console.error(`[YT-Checker] Guild #${this.guildId}: Failed to rename voice channel:\n`.red, err.message)
       })

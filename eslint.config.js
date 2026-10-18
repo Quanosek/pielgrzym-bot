@@ -7,6 +7,7 @@ const prettierConfig = require('eslint-config-prettier')
 const n = nPlugin.default || nPlugin
 
 module.exports = [
+  { ignores: ['.pnpm-store/**'] },
   js.configs.recommended,
   n.configs['flat/recommended'],
   {

@@ -16,18 +16,18 @@ const BotPermissions = Object.freeze({
 })
 
 const permissionDisplayNames = Object.freeze({
-  [BotPermissions.MANAGE_GUILD]: 'Manage Guild',
-  [BotPermissions.MANAGE_ROLES]: 'Manage Roles',
-  [BotPermissions.MANAGE_CHANNELS]: 'Manage Channels',
-  [BotPermissions.CREATE_INSTANT_INVITE]: 'Create Instant Invite',
-  [BotPermissions.VIEW_CHANNEL]: 'View Channel',
+  [BotPermissions.MANAGE_GUILD]: 'Zarządzanie serwerem',
+  [BotPermissions.MANAGE_ROLES]: 'Zarządzanie rolami',
+  [BotPermissions.MANAGE_CHANNELS]: 'Zarządzanie kanałami',
+  [BotPermissions.CREATE_INSTANT_INVITE]: 'Tworzenie zaproszeń',
+  [BotPermissions.VIEW_CHANNEL]: 'Wyświetlanie kanałów',
 
-  [BotPermissions.SEND_MESSAGES]: 'Send Messages',
-  [BotPermissions.EMBED_LINKS]: 'Embed Links',
-  [BotPermissions.READ_MESSAGE_HISTORY]: 'Read Message History',
-  [BotPermissions.ADD_REACTIONS]: 'Add Reactions',
+  [BotPermissions.SEND_MESSAGES]: 'Wysyłanie wiadomości',
+  [BotPermissions.EMBED_LINKS]: 'Zamieszczanie linków',
+  [BotPermissions.READ_MESSAGE_HISTORY]: 'Czytanie historii wiadomości',
+  [BotPermissions.ADD_REACTIONS]: 'Dodawanie reakcji',
 
-  [BotPermissions.CONNECT]: 'Connect',
+  [BotPermissions.CONNECT]: 'Łączenie',
 })
 
 module.exports = { BotPermissions, permissionDisplayNames }

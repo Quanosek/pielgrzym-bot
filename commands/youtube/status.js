@@ -16,10 +16,10 @@ module.exports = async (interaction) => {
 
   const notificationsFields = []
   if (notifications?.newVideosChannelId) {
-    notificationsFields.push({ name: 'Powiadomienia nowych filmów', value: `<#${notifications.newVideosChannelId}>`, inline: true })
+    notificationsFields.push({ name: 'Powiadomienia o nowych filmach', value: `<#${notifications.newVideosChannelId}>`, inline: true })
   }
   if (notifications?.activityChannelId) {
-    notificationsFields.push({ name: 'Powiadomienia nowych komentarzy', value: `<#${notifications.activityChannelId}>`, inline: true })
+    notificationsFields.push({ name: 'Powiadomienia o nowych komentarzach', value: `<#${notifications.activityChannelId}>`, inline: true })
   }
 
   const countersFields = []

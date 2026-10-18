@@ -5,6 +5,7 @@ const { getYouTubeConfig, getUploadsPlaylistId } = require('../config/youtube')
 const { formatNumber } = require('../utils/format-number')
 const GuildConfig = require('../utils/guild-config')
 const DataStore = require('../utils/yt-cache')
+const runGuildTask = require('../utils/yt-task')
 
 class YTVideosMonitor {
   constructor(client, guildId) {
@@ -13,6 +14,10 @@ class YTVideosMonitor {
   }
 
   async checkNewVideos() {
+    return runGuildTask(this.guildId, () => this._checkNewVideos())
+  }
+
+  async _checkNewVideos() {
     try {
       const config = await getYouTubeConfig(this.guildId)
       if (!config) {
@@ -41,7 +46,7 @@ class YTVideosMonitor {
         return
       }
 
-      // fetch latest uploads page
+      // Fetch the latest uploads page
       const videosResponse = await youtube.playlistItems.list({
         part: 'snippet,contentDetails',
         playlistId: uploadsPlaylistId,
@@ -51,7 +56,7 @@ class YTVideosMonitor {
       const items = videosResponse.data.items || []
       if (items.length === 0) return
 
-      // fast lookup for dedup
+      // Index cached video IDs for quick lookup
       const cachedVideoIds = new Set(cachedVideos.map((v) => v.id))
       const fetchedVideos = items.map((item) => {
         const videoPublishedAt = item.contentDetails.videoPublishedAt || item.snippet.publishedAt
@@ -64,7 +69,7 @@ class YTVideosMonitor {
         }
       })
 
-      // skip already-cached or pre-setup videos
+      // Skip cached videos and uploads published before monitoring began
       const newVideos = fetchedVideos.filter((video) => {
         const publishedAtMs = new Date(video.snippet.publishedAt).getTime()
         const isAfterSetup = !Number.isFinite(publishedAtMs) || setupDateMs <= 0 || publishedAtMs >= setupDateMs
@@ -73,14 +78,14 @@ class YTVideosMonitor {
 
       if (newVideos.length === 0) return
 
-      // oldest first
-      for (const video of newVideos.reverse()) {
+      // Notify about the oldest uploads first
+      for (const video of [...newVideos].reverse()) {
         await this._sendNotification(video, notificationChannelId, youtubeChannel)
         await this._incrementVideosCounter()
         this._scheduleStatsSummary(video, notificationChannelId)
       }
 
-      // prepend new, dedupe existing
+      // Prepend new uploads and remove duplicates
       const newVideoIds = new Set(newVideos.map((video) => video.id))
       const mergedCache = [...newVideos, ...cachedVideos.filter((video) => !newVideoIds.has(video.id))]
       await DataStore.updateVideosCache(this.guildId, mergedCache)
@@ -155,6 +160,7 @@ class YTVideosMonitor {
       if (missingPerms.length > 0) return
 
       const newName = `Filmy: ${formatNumber(nextVideoCount, { style: 'spaced' })}`
+      if (channel.name === newName) return
       await channel.setName(newName).catch((err) => {
         console.error(`[YT-Checker] Guild #${this.guildId}: Failed to rename videos counter channel:\n`.red, err.message)
       })
@@ -167,7 +173,7 @@ class YTVideosMonitor {
     const publishedAt = new Date(video.snippet?.publishedAt).getTime()
     if (!Number.isFinite(publishedAt)) return
 
-    // delay to 45 min after publish
+    // Schedule the summary for 45 minutes after publication
     const targetTime = publishedAt + 45 * 60 * 1000
     const delay = Math.max(0, targetTime - Date.now())
 

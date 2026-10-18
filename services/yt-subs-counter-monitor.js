@@ -10,11 +10,11 @@ class YTSubsCounterMonitor {
     this.guildId = guildId
   }
 
-  async updateSubscriberCount() {
+  async updateSubscriberCount(refreshStatistics = true) {
     try {
       const guildConfig = await GuildConfig.getConfig(this.guildId)
       const subsChannelId = guildConfig?.ytMonitoring?.counters?.subsChannelId
-      const item = await this.updateChannelStatistics()
+      const item = refreshStatistics ? await this.updateChannelStatistics() : guildConfig?.ytMonitoring?.youtubeChannel
       if (!item?.statistics?.subscriberCount || !subsChannelId) return
 
       const subs = item.statistics.subscriberCount
@@ -39,6 +39,7 @@ class YTSubsCounterMonitor {
       }
 
       const newName = `Subskrypcje: ${formatNumber(subs, { style: 'compact' })}`
+      if (channel.name === newName) return
       await channel.setName(newName).catch((err) => {
         console.error(`[YT-Checker] Guild #${this.guildId}: Failed to rename voice channel:\n`.red, err.message)
       })

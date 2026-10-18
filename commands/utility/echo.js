@@ -8,10 +8,10 @@ module.exports = {
     .setDescription('Stwórz własną wiadomość')
     .addStringOption((option) => option.setName('input').setDescription('Treść wiadomości').setMaxLength(2_000).setRequired(true))
     .addChannelOption((option) =>
-      option.setName('channel').setDescription('Kanał, do którego ma zostać wysłana wiadomość (Obecny kanał)').addChannelTypes(ChannelType.GuildText),
+      option.setName('channel').setDescription('Kanał docelowy (domyślnie: bieżący kanał)').addChannelTypes(ChannelType.GuildText),
     )
-    .addBooleanOption((option) => option.setName('reply').setDescription('Czy wiadomość ma się wyświetlić jako odpowiedź (True)'))
-    .addBooleanOption((option) => option.setName('ephemeral').setDescription('Czy wiadomość ma być widoczna tylko dla Ciebie (False)')),
+    .addBooleanOption((option) => option.setName('reply').setDescription('Czy wysłać wiadomość jako odpowiedź (domyślnie: tak)'))
+    .addBooleanOption((option) => option.setName('ephemeral').setDescription('Czy wiadomość ma być widoczna tylko dla Ciebie (domyślnie: nie)')),
 
   async execute(interaction) {
     const input = interaction.options.getString('input')

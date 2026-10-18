@@ -6,9 +6,9 @@ module.exports = async (interaction) => {
   const config = await GuildConfig.getConfig(guildId)
   const counterType = interaction.options.getString('counter')
 
-  // Disable specific counter
+  // Disable the selected counter
   if (counterType) {
-    // Ensure counter is currently enabled
+    // Check whether the counter is enabled
     const counters = config?.ytMonitoring?.counters
     const channelKey = `${counterType}ChannelId`
 
@@ -26,7 +26,7 @@ module.exports = async (interaction) => {
 
     const channelId = counters[channelKey]
 
-    // Filter out selected counter from config
+    // Remove the selected counter from the configuration
     const newCounter = { ...counters }
     delete newCounter[channelKey]
     if (counterType === 'views') delete newCounter.viewsHistory
@@ -40,7 +40,7 @@ module.exports = async (interaction) => {
 
     await interaction.reply(`🔴 Licznik ${counterName} został wyłączony.`)
 
-    // Reset voice channel name
+    // Reset the voice channel name
     const channel = await interaction.guild.channels.fetch(channelId).catch(() => null)
 
     if (channel) {
@@ -55,7 +55,7 @@ module.exports = async (interaction) => {
     return
   }
 
-  // Ensure monitoring is currently enabled
+  // Check whether monitoring is enabled
   if (!config?.ytMonitoring?.enabled) {
     return await interaction.reply({
       content: '⚠️ Monitoring kanału YouTube nie został włączony.',
@@ -63,7 +63,7 @@ module.exports = async (interaction) => {
     })
   }
 
-  // Disable entire monitoring
+  // Disable all monitoring
   await GuildConfig.disableMonitoring(guildId)
 
   return await interaction.reply({

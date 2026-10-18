@@ -1,45 +1,31 @@
-# <img src="images/avatar.png" alt="" width="40" height="40" align="left"> Pielgrzym
+# Pielgrzym
 
-### Add this bot to your server:
+Discord bot for zbawienie.pl and zasobybiblijne.org, with YouTube video and comment notifications and voice-channel statistics.
 
-- General Permissions:
-  - Manage Server
-  - Manage Roles
-  - Manage Channels
-  - Create Instant Invite
-  - View Channels
+## Run locally
 
-- Text Permissions:
-  - Send Messages
-  - Embed Links
-  - Read Message History
-  - Add Reactions
-  - Use Slash Commands
+Requires Node.js >= 24 and pnpm >= 11.
 
-- Voice Permissions
-  - Connect
+1. Copy `.env.example` to `.env` and fill in your Discord credentials and YouTube Data API v3 key.
+2. Install dependencies and start the bot:
 
-### How to run source code locally:
-
-- [Node.js](https://nodejs.org/en/download) >= 24 required
-- [pnpm package manager](https://pnpm.io/installation) >= 11 required
-
-```bash
-pnpm install && pnpm dev
+```sh
+pnpm install
+pnpm start
 ```
 
-### How to start bot in production:
+Register slash commands with `pnpm deploy:guild` for development or `pnpm deploy:global` for production.
+Use `/youtube` to configure monitoring and counters.
 
-- [nvm (Node Version Manager)](https://github.com/nvm-sh/nvm) is required
-- [pm2 (Process Manager)](https://pm2.io/docs/runtime/guide/installation/) is required
+## Production
 
-```bash
-pnpm install && bash ./run.sh
+With nvm and PM2 installed, run `bash ./run.sh`. Keep one bot instance.
+
+## Maintenance
+
+```sh
+pnpm update
+pnpm validate
 ```
 
-```bash
-# To enable clusters to run on startup paste:
-pm2 startup
-# paste given command and run:
-pm2 save
-```
+Architecture, schedules, API quota accounting, and development constraints: [AGENTS.md](AGENTS.md).

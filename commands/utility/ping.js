@@ -6,8 +6,8 @@ module.exports = {
   data: new SlashCommandBuilder().setName('ping').setDescription('Sprawdź czas odpowiedzi bota'),
 
   async execute(interaction) {
-    const { resource } = await interaction.reply({ content: 'Pong! ...', withResponse: true })
+    const { resource } = await interaction.reply({ content: '🏓 Sprawdzam czas odpowiedzi...', withResponse: true })
     const latency = resource.message.createdTimestamp - interaction.createdTimestamp
-    await interaction.editReply(`Pong! 🏓 Czas odpowiedzi: \`${latency} ms\``)
+    await interaction.editReply(`🏓 Czas odpowiedzi: \`${latency} ms\``)
   },
 }

@@ -6,7 +6,7 @@ module.exports = {
   data: new SlashCommandBuilder().setName('invite').setDescription('Stwórz zaproszenie do tego serwera, które nigdy nie wygaśnie'),
 
   async execute(interaction) {
-    // Define guild infinite invite URL
+    // Find or create a permanent server invite
     let inviteUrl
     if (interaction.guild.vanityURLCode) {
       inviteUrl = `https://discord.gg/${interaction.guild.vanityURLCode}`

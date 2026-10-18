@@ -1,5 +1,6 @@
 const { getYouTubeConfig, getUploadsPlaylistId } = require('../config/youtube')
 const DataStore = require('../utils/yt-cache')
+const runGuildTask = require('../utils/yt-task')
 
 class YTVideosCache {
   constructor(client, guildId) {
@@ -8,6 +9,10 @@ class YTVideosCache {
   }
 
   async refreshVideosCache() {
+    return runGuildTask(this.guildId, () => this._refreshVideosCache())
+  }
+
+  async _refreshVideosCache() {
     try {
       const config = await getYouTubeConfig(this.guildId)
       if (!config) {
@@ -27,7 +32,7 @@ class YTVideosCache {
       let nextPageToken = null
       let pageCount = 0
 
-      // paginate all uploads playlist pages
+      // Fetch every page of the uploads playlist
       do {
         const videosResponse = await youtube.playlistItems.list({
           part: 'snippet,contentDetails',

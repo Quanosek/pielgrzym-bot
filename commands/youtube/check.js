@@ -26,7 +26,7 @@ module.exports = async (interaction) => {
       flags: MessageFlags.Ephemeral,
     })
 
-    console.log('🎬 Checking for new videos on user demand'.gray)
+    console.log('🎬 Checking for new videos on request'.gray)
     const monitor = new YTVideosMonitor(interaction.client, guildId)
     await monitor.checkNewVideos()
     return
@@ -38,7 +38,7 @@ module.exports = async (interaction) => {
       flags: MessageFlags.Ephemeral,
     })
 
-    console.log('💬 Checking for new comments on user demand'.gray)
+    console.log('💬 Checking for new comments on request'.gray)
     const monitor = new YTCommentsMonitor(interaction.client, guildId)
     await monitor.checkNewComments()
     return
@@ -49,7 +49,7 @@ module.exports = async (interaction) => {
   if (type === 'counter-subs') {
     if (!counters?.subsChannelId) {
       return interaction.reply({
-        content: '⚠️ Licznik subskrypcji nie został włączony. Użyj `/youtube counter` aby go ustawić.',
+        content: '⚠️ Licznik subskrypcji nie został włączony. Użyj `/youtube counter`, aby go ustawić.',
         flags: MessageFlags.Ephemeral,
       })
     }
@@ -59,7 +59,7 @@ module.exports = async (interaction) => {
       flags: MessageFlags.Ephemeral,
     })
 
-    console.log('📊 Updating subscriber count on user demand'.gray)
+    console.log('📊 Updating the subscriber count on request'.gray)
     const monitor = new YTSubsCounterMonitor(interaction.client, guildId)
     await monitor.updateSubscriberCount()
     return
@@ -68,7 +68,7 @@ module.exports = async (interaction) => {
   if (type === 'counter-views') {
     if (!counters?.viewsChannelId) {
       return interaction.reply({
-        content: '⚠️ Licznik wyświetleń nie został włączony. Użyj `/youtube counter` aby go ustawić.',
+        content: '⚠️ Licznik wyświetleń nie został włączony. Użyj `/youtube counter`, aby go ustawić.',
         flags: MessageFlags.Ephemeral,
       })
     }
@@ -78,7 +78,7 @@ module.exports = async (interaction) => {
       flags: MessageFlags.Ephemeral,
     })
 
-    console.log('📊 Updating views count on user demand'.gray)
+    console.log('📊 Updating the view count on request'.gray)
     const monitor = new YTViewsCounterMonitor(interaction.client, guildId)
     await monitor.updateViewsCount()
     return
@@ -87,7 +87,7 @@ module.exports = async (interaction) => {
   if (type === 'counter-videos') {
     if (!counters?.videosChannelId) {
       return interaction.reply({
-        content: '⚠️ Licznik filmów nie został włączony. Użyj `/youtube counter` aby go ustawić.',
+        content: '⚠️ Licznik filmów nie został włączony. Użyj `/youtube counter`, aby go ustawić.',
         flags: MessageFlags.Ephemeral,
       })
     }
@@ -97,7 +97,7 @@ module.exports = async (interaction) => {
       flags: MessageFlags.Ephemeral,
     })
 
-    console.log('📊 Updating videos count on user demand'.gray)
+    console.log('📊 Updating the video count on request'.gray)
     const monitor = new YTVideosCounterMonitor(interaction.client, guildId)
     await monitor.updateVideosCount()
     return

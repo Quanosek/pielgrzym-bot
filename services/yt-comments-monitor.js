@@ -1,13 +1,14 @@
 const { EmbedBuilder } = require('discord.js')
 const he = require('he')
 
-const { getYouTubeConfig } = require('../config/youtube')
+const { getYouTubeConfig, isQuotaError } = require('../config/youtube')
 const DataStore = require('../utils/yt-cache')
+const runGuildTask = require('../utils/yt-task')
 
 const EMBED_DESCRIPTION_LIMIT = 4096 - 5
 const MAX_TRACKED_COMMENT_IDS = 10000
-const FULL_SCAN_MAX_VIDEOS = 100 // active window: top N by index
-const FULL_SCAN_AGE_DAYS = 60 // active window: max age in days
+const FULL_SCAN_MAX_VIDEOS = 100 // Include the latest videos regardless of age
+const FULL_SCAN_AGE_DAYS = 60 // Include all videos within this age limit
 const FULL_SCAN_AGE_MS = FULL_SCAN_AGE_DAYS * 24 * 60 * 60 * 1000
 
 class YTCommentsMonitor {
@@ -17,6 +18,10 @@ class YTCommentsMonitor {
   }
 
   async checkNewComments() {
+    return runGuildTask(this.guildId, () => this._checkNewComments())
+  }
+
+  async _checkNewComments() {
     try {
       const config = await getYouTubeConfig(this.guildId)
       if (!config) {
@@ -33,27 +38,28 @@ class YTCommentsMonitor {
         return
       }
 
-      const cachedVideos = await DataStore.getVideosCache(this.guildId)
+      const data = await DataStore.getData(this.guildId)
+      const cachedVideos = data.videosCache
       if (cachedVideos.length === 0) {
         console.log(`[YT-Checker] Guild #${this.guildId}: No cached videos, skipping comments check`.yellow)
         return
       }
 
-      const data = await DataStore.getData(this.guildId)
       const seenLocally = new Set(data.seenComments || [])
+      const seenAtStart = new Set(seenLocally)
 
       const allNewItems = []
       const unavailableVideoIds = new Set()
       const now = Date.now()
 
-      // active window: recent ≤60d or top 100
+      // Include videos from the last 60 days or the latest 100 uploads
       const activeVideos = cachedVideos.filter((v, i) => {
         const publishedAt = new Date(v.snippet?.publishedAt).getTime()
         return (Number.isFinite(publishedAt) && now - publishedAt <= FULL_SCAN_AGE_MS) || i < FULL_SCAN_MAX_VIDEOS
       })
 
       for (const video of activeVideos) {
-        const { newItems, unavailable } = await this._scanVideoComments(youtube, video, seenLocally, setupDateMs)
+        const { newItems, unavailable } = await this._scanVideoComments(youtube, video, seenLocally, setupDateMs, seenAtStart)
         allNewItems.push(...newItems)
         if (unavailable) unavailableVideoIds.add(video.id)
       }
@@ -64,12 +70,12 @@ class YTCommentsMonitor {
       }
 
       await DataStore.updateGuildData(this.guildId, {
-        seenComments: [...seenLocally].slice(0, MAX_TRACKED_COMMENT_IDS),
+        seenComments: [...seenLocally].slice(-MAX_TRACKED_COMMENT_IDS),
       })
 
       if (allNewItems.length === 0) return
 
-      // oldest first
+      // Send the oldest comments first
       allNewItems.sort((a, b) => new Date(a.comment.publishedAt) - new Date(b.comment.publishedAt))
 
       for (const item of allNewItems) {
@@ -81,6 +87,10 @@ class YTCommentsMonitor {
   }
 
   async checkOldVideosDiagnostic() {
+    return runGuildTask(this.guildId, () => this._checkOldVideosDiagnostic())
+  }
+
+  async _checkOldVideosDiagnostic() {
     try {
       const config = await getYouTubeConfig(this.guildId)
       if (!config) return
@@ -90,13 +100,14 @@ class YTCommentsMonitor {
       const notificationChannelId = notifications?.activityChannelId
       if (!notificationChannelId) return
 
-      const cachedVideos = await DataStore.getVideosCache(this.guildId)
+      const data = await DataStore.getData(this.guildId)
+      const cachedVideos = data.videosCache
       if (cachedVideos.length === 0) return
 
-      const data = await DataStore.getData(this.guildId)
       const seenLocally = new Set(data.seenComments || [])
+      const seenAtStart = new Set(seenLocally)
 
-      // fast lookup set for active window ids
+      // Index active video IDs for quick lookup
       const now = Date.now()
       const activeVideoIds = new Set(
         cachedVideos
@@ -107,7 +118,7 @@ class YTCommentsMonitor {
           .map((v) => v.id),
       )
 
-      // outside active window
+      // Select videos outside the active window
       const oldVideos = cachedVideos.filter((v) => !activeVideoIds.has(v.id))
 
       if (oldVideos.length === 0) {
@@ -117,41 +128,44 @@ class YTCommentsMonitor {
 
       console.log(`[YT-Checker] Guild #${this.guildId}: Diagnosing ${oldVideos.length} old video(s)`.gray)
 
-      // phase 1: batch stats
+      // Fetch statistics in batches
       const statsMap = await this._batchFetchStatistics(youtube, oldVideos)
-      const videosMeta = await DataStore.getVideosMeta(this.guildId)
+      const videosMeta = data.videosMeta
 
-      // phase 2: determine which videos need a full scan
+      // Identify videos that need a full scan
       const videosNeedingScan = []
 
       for (const video of oldVideos) {
         const meta = videosMeta[video.id]
         const currentCount = statsMap[video.id]
 
-        // skip unavailable (deleted/private/comments disabled)
+        // Skip videos with unavailable comment counts
         if (currentCount === null || currentCount === undefined) continue
 
-        // count changed or no baseline
+        // Scan videos with changed counts or no baseline
         if (!meta || currentCount !== meta.commentCount) {
           videosNeedingScan.push(video)
           continue
         }
 
-        // latest id shifted (same count but rotated)
+        // Detect a changed latest comment when the count stays the same
         if (meta.lastCommentId) {
           try {
             const quickResp = await youtube.commentThreads.list({
-              part: 'id',
+              part: 'snippet',
               videoId: video.id,
               order: 'time',
               maxResults: 1,
             })
-            const latestId = quickResp.data.items?.[0]?.id
+            const latestId = quickResp.data.items?.[0]?.snippet?.topLevelComment?.id
             if (latestId && latestId !== meta.lastCommentId) {
               videosNeedingScan.push(video)
             }
-          } catch {
-            // ignore (comments disabled after last scan)
+          } catch (error) {
+            if (isQuotaError(error)) throw error
+            if (!error.errors?.some(({ reason }) => reason === 'commentsDisabled')) {
+              console.error(`[YT-Checker] Guild #${this.guildId}: Error checking latest comment for ${video.id}:`, error.message)
+            }
           }
         }
       }
@@ -163,18 +177,25 @@ class YTCommentsMonitor {
 
       console.log(`[YT-Checker] Guild #${this.guildId}: ${videosNeedingScan.length} old video(s) changed, running full scan`.gray)
 
-      // phase 3: full scan changed videos
+      // Scan videos with changed comments
       const allNewItems = []
       const metaUpdates = {}
       const unavailableVideoIds = new Set()
 
       for (const video of videosNeedingScan) {
-        const { newItems, latestCommentId, unavailable } = await this._scanVideoComments(youtube, video, seenLocally, setupDateMs)
+        const { newItems, latestCommentId, unavailable, complete } = await this._scanVideoComments(
+          youtube,
+          video,
+          seenLocally,
+          setupDateMs,
+          seenAtStart,
+        )
         allNewItems.push(...newItems)
         if (unavailable) {
           unavailableVideoIds.add(video.id)
           continue
         }
+        if (!complete) continue
         metaUpdates[video.id] = {
           commentCount: statsMap[video.id],
           ...(latestCommentId ? { lastCommentId: latestCommentId } : {}),
@@ -186,9 +207,9 @@ class YTCommentsMonitor {
         await DataStore.updateVideosCache(this.guildId, filteredCache)
       }
 
-      // persist seen comments and video meta
+      // Save seen comment IDs and video metadata
       await DataStore.updateGuildData(this.guildId, {
-        seenComments: [...seenLocally].slice(0, MAX_TRACKED_COMMENT_IDS),
+        seenComments: [...seenLocally].slice(-MAX_TRACKED_COMMENT_IDS),
       })
 
       if (Object.keys(metaUpdates).length > 0) {
@@ -197,7 +218,7 @@ class YTCommentsMonitor {
 
       if (allNewItems.length === 0) return
 
-      // phase 4: send chronologically (oldest first)
+      // Send notifications from oldest to newest
       allNewItems.sort((a, b) => new Date(a.comment.publishedAt) - new Date(b.comment.publishedAt))
 
       for (const item of allNewItems) {
@@ -208,17 +229,15 @@ class YTCommentsMonitor {
     }
   }
 
-  async _scanVideoComments(youtube, video, seenLocally, setupDateMs) {
+  async _scanVideoComments(youtube, video, seenLocally, setupDateMs, seenAtStart) {
     const videoId = video.id
     const videoTitle = video.snippet.title
     const newItems = []
     let latestCommentId = null
 
-    // baseline for early-exit
-    const seenAtStart = new Set(seenLocally)
-
     let pageToken
     let pageCount = 0
+    let reachedBaseline = false
 
     try {
       do {
@@ -233,7 +252,7 @@ class YTCommentsMonitor {
         const items = commentsResponse.data.items || []
         let lastTopLevelId = null
 
-        // track newest comment id (first item on first page)
+        // Record the newest top-level comment ID from the first page
         if (pageCount === 0 && items.length > 0) {
           latestCommentId = items[0].snippet.topLevelComment.id
         }
@@ -246,7 +265,7 @@ class YTCommentsMonitor {
           lastTopLevelId = topLevelId
 
           if (!seenLocally.has(topLevelId)) {
-            // mark even if pre-setup — enables early-exit on next run
+            // Remember older comments so the next scan can stop early
             seenLocally.add(topLevelId)
 
             if (this._isOnOrAfterSetupDate(topLevelSnippet.publishedAt, setupDateMs)) {
@@ -285,13 +304,17 @@ class YTCommentsMonitor {
           }
         }
 
-        // all further pages already processed
-        if (lastTopLevelId && seenAtStart.has(lastTopLevelId)) break
+        // Stop when the page reaches previously seen comments
+        if (lastTopLevelId && seenAtStart.has(lastTopLevelId)) {
+          reachedBaseline = true
+          break
+        }
 
         pageToken = commentsResponse.data.nextPageToken
         pageCount++
       } while (pageToken && pageCount < 10)
     } catch (error) {
+      if (isQuotaError(error)) throw error
       if (error.code === 403 && error.message.includes('disabled comments')) return { newItems, latestCommentId, unavailable: false }
 
       if (this._isVideoUnavailableError(error)) {
@@ -299,9 +322,10 @@ class YTCommentsMonitor {
       }
 
       console.error(`[YT-Checker] Guild #${this.guildId}: Error checking comments for video id=${videoId}:\n`.red, error.message)
+      return { newItems, latestCommentId, unavailable: false, complete: false }
     }
 
-    return { newItems, latestCommentId, unavailable: false }
+    return { newItems, latestCommentId, unavailable: false, complete: reachedBaseline || !pageToken }
   }
 
   _isVideoUnavailableError(error) {
@@ -330,11 +354,12 @@ class YTCommentsMonitor {
           statsMap[item.id] = cc !== undefined ? Number(cc) : null
         }
 
-        // missing from response = deleted/private
+        // Treat missing videos as unavailable
         for (const video of chunk) {
           if (!(video.id in statsMap)) statsMap[video.id] = null
         }
       } catch (error) {
+        if (isQuotaError(error)) throw error
         console.error(`[YT-Checker] Guild #${this.guildId}: Error fetching statistics batch:\n`.red, error.message)
       }
     }
@@ -360,7 +385,9 @@ class YTCommentsMonitor {
         pageCount++
       } while (pageToken && pageCount < 10)
     } catch (error) {
+      if (isQuotaError(error)) throw error
       console.error(`[YT-Checker] Guild #${this.guildId}: Error fetching replies for ${parentId}:\n`.red, error.message)
+      throw error
     }
 
     return allReplies

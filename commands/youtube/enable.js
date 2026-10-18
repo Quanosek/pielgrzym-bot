@@ -10,12 +10,12 @@ module.exports = async (interaction) => {
 
   await interaction.deferReply()
 
-  // Disable currently enabled monitoring if exists
+  // Disable existing monitoring
   if (config?.ytMonitoring?.enabled) {
     await GuildConfig.disableMonitoring(guildId)
   }
 
-  // Find YouTube channel by name
+  // Find the YouTube channel by name
   const channelName = interaction.options.getString('channel-name')
   const cleanName = channelName.replace(/^@/, '')
   const searches = [
@@ -44,16 +44,16 @@ module.exports = async (interaction) => {
     })
   }
 
-  // Save new channel monitoring config
+  // Save the new monitoring configuration
   const newVideosChannelId = interaction.channelId
   await GuildConfig.enableMonitoring({ guildId, newVideosChannelId, youtubeChannel })
 
-  // Cache published channel latest videos data
-  console.log('⬇️ Caching latest videos on user demand'.gray)
+  // Cache the channel uploads
+  console.log('⬇️ Caching the latest videos on request'.gray)
   const ytVideosCache = new YTVideosCache(interaction.client, guildId)
   await ytVideosCache.refreshVideosCache()
 
-  // Return configured channel message
+  // Confirm that monitoring is enabled
   const embed = new EmbedBuilder()
     .setColor('#9b582e')
     .setTitle('🔎 Monitorowanie kanału YouTube zostało włączone!')

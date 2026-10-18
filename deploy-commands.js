@@ -29,8 +29,7 @@ const rest = new REST().setToken(process.env.DISCORD_TOKEN)
 
 const scope = process.argv[2]
 
-// Discord requires registering commands for specific guild (faster) or globally for all guilds (slower)
-// Both methods can be used at the same time!
+// Register commands for one guild or globally
 
 const deployCommands = async () => {
   try {

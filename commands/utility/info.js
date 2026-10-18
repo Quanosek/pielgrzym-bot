@@ -44,7 +44,7 @@ module.exports = {
 
       if (member.roles.cache.size > 1) {
         const roles = member.roles.cache
-          .filter((role) => role.id !== interaction.guild.id) // ignore @everyone
+          .filter((role) => role.id !== interaction.guild.id)
           .map((role) => `<@&${role.id}>`)
           .join(', ')
 
@@ -63,7 +63,7 @@ module.exports = {
       const channelCount = interaction.guild.channels.cache.filter((c) => c.type !== ChannelType.GuildCategory).size
       const roleCount = interaction.guild.roles.cache.filter((r) => r.id !== interaction.guild.id).size
 
-      // Define guild infinite invite URL
+      // Find or create a permanent server invite
       let inviteUrl
       if (interaction.guild.vanityURLCode) {
         inviteUrl = `https://discord.gg/${interaction.guild.vanityURLCode}`

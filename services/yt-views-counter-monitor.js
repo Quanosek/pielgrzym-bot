@@ -36,13 +36,13 @@ class YTViewsCounterMonitor {
     return todayViewCount
   }
 
-  async updateViewsCount() {
+  async updateViewsCount(refreshStatistics = true) {
     try {
       const guildConfig = await GuildConfig.getConfig(this.guildId)
       const viewsChannelId = guildConfig?.ytMonitoring?.counters?.viewsChannelId
       if (!viewsChannelId) return
 
-      await new YTSubsCounterMonitor(this.client, this.guildId).updateChannelStatistics()
+      if (refreshStatistics) await new YTSubsCounterMonitor(this.client, this.guildId).updateChannelStatistics()
       const refreshedConfig = await GuildConfig.getConfig(this.guildId)
       const todayViewCount = Number(refreshedConfig?.ytMonitoring?.youtubeChannel?.statistics?.viewCount)
       if (!Number.isFinite(todayViewCount)) {
@@ -50,7 +50,7 @@ class YTViewsCounterMonitor {
         return
       }
 
-      const today = new Date().toISOString().slice(0, 10) // YYYY-MM-DD
+      const today = new Date().toISOString().slice(0, 10)
 
       const history = guildConfig?.ytMonitoring?.counters?.viewsHistory || []
       const existingIndex = history.findIndex((entry) => entry.date === today)
@@ -69,9 +69,9 @@ class YTViewsCounterMonitor {
 
       await GuildConfig.updateGuildConfig(this.guildId, {
         ytMonitoring: {
-          ...guildConfig?.ytMonitoring,
+          ...refreshedConfig?.ytMonitoring,
           counters: {
-            ...guildConfig?.ytMonitoring?.counters,
+            ...refreshedConfig?.ytMonitoring?.counters,
             viewsHistory: trimmedHistory,
           },
         },
@@ -99,6 +99,7 @@ class YTViewsCounterMonitor {
       }
 
       const newName = `Wyświetlenia: ${formatNumber(views, { style: 'compact' })}`
+      if (channel.name === newName) return
       await channel.setName(newName).catch((err) => {
         console.error(`[YT-Checker] Guild #${this.guildId}: Failed to rename voice channel:\n`.red, err.message)
       })
