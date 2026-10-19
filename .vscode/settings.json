@@ -1,6 +1,7 @@
 {
-  "cSpell.words": ["zasobybiblijne"],
+  "editor.formatOnSave": true,
   "files.readonlyInclude": {
+    "data/": true,
     "logs/": true,
     "node_modules/": true,
     "pnpm-lock.yaml": true,

@@ -1,2 +1,6 @@
+.env
 data/
+logs/
+node_modules/
 .pnpm-store/
+pnpm-lock.yaml

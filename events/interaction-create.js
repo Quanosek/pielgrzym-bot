@@ -5,6 +5,13 @@ module.exports = {
   name: Events.InteractionCreate,
 
   async execute(interaction) {
+    if (
+      (interaction.isStringSelectMenu() || interaction.isButton()) &&
+      (interaction.customId.startsWith('notion:') || interaction.customId.startsWith('notion-oauth:'))
+    ) {
+      return require('../commands/notion').handleComponent(interaction)
+    }
+
     if (interaction.isChannelSelectMenu()) {
       const selected = interaction.client.interactionHandlers.channelSelect(interaction)
 

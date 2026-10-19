@@ -13,7 +13,7 @@ module.exports = {
       .setTitle('⚙️ Pielgrzym - Bot Discord')
       .setThumbnail(client.user.displayAvatarURL())
       .setDescription(
-        'Pielgrzym to dedykowany bot Discord dla potrzeb społeczności i zarządzania serwerem. Stworzony z myślą o prostym monitoringu wybranych kanałów YouTube bezpośrednio z poziomu serwera Discord.',
+        'Pielgrzym monitoruje wybrany kanał YouTube, wysyła powiadomienia o nowych filmach i komentarzach na wskazane kanały Discord oraz regularnie aktualizuje statystyki. Opcjonalnie dodaje opublikowane filmy do tabeli Notion. Każdy serwer może wybrać własny kanał YouTube.',
       )
       .addFields(
         { name: 'Tag', value: client.user.tag },

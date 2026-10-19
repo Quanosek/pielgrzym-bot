@@ -9,6 +9,7 @@ const YTVideosCache = require('../services/yt-videos-cache')
 const YTSubsCounterMonitor = require('../services/yt-subs-counter-monitor')
 const YTViewsCounterMonitor = require('../services/yt-views-counter-monitor')
 const YTVideosCounterMonitor = require('../services/yt-videos-counter-monitor')
+const notionPublisher = require('../services/notion-publisher')
 
 const TIMEZONE = 'America/Los_Angeles'
 const hourFormatter = new Intl.DateTimeFormat('en-US', { timeZone: TIMEZONE, hour: '2-digit', hourCycle: 'h23' })
@@ -24,7 +25,7 @@ module.exports = {
     const initialMonitoredCount = Object.values(initialGuildConfigs).filter((config) => config?.ytMonitoring?.enabled).length
     console.info(`[YT-Checker] Monitoring enabled for ${initialMonitoredCount} guild(s)`)
 
-    function schedule(expression, name, operation) {
+    function schedule(expression, name, operation, isEnabled = (config) => config?.ytMonitoring?.enabled) {
       cron.schedule(
         expression,
         async ({ date }) => {
@@ -32,7 +33,7 @@ module.exports = {
           try {
             const configs = await GuildConfig.getConfig()
             for (const [guildId, config] of Object.entries(configs)) {
-              if (!config?.ytMonitoring?.enabled) continue
+              if (!isEnabled(config)) continue
               try {
                 await operation(guildId, date)
               } catch (error) {
@@ -47,6 +48,12 @@ module.exports = {
       )
     }
 
+    schedule(
+      '* * * * *',
+      'publish-notion-entries',
+      (guildId) => notionPublisher.flushGuild(guildId),
+      (config) => config?.notionIntegration?.enabled,
+    )
     schedule('0 4 * * *', 'refresh-videos-cache', (guildId) => new YTVideosCache(client, guildId).refreshVideosCache())
     schedule('*/10 * * * *', 'check-new-videos', (guildId) => new YTVideosMonitor(client, guildId).checkNewVideos())
     schedule('*/30 * * * *', 'check-new-comments', (guildId) => new YTCommentsMonitor(client, guildId).checkNewComments())

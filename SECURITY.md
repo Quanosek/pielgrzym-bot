@@ -1,21 +1,22 @@
-# Security Policy
+# Polityka bezpieczeństwa
 
-## Supported Versions
+Pielgrzym to pojedyncza aplikacja wdrażana z gałęzi `master`. Aktywne poprawki bezpieczeństwa dotyczą wyłącznie najnowszego opublikowanego wydania.
 
-Use this section to tell people about which versions of your project are
-currently being supported with security updates.
+## Zakres bezpieczeństwa
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 5.1.x   | :white_check_mark: |
-| 5.0.x   | :x:                |
-| 4.0.x   | :white_check_mark: |
-| < 4.0   | :x:                |
+- Proces bota (Discord gateway, cron harmonogramy, publikator Notion).
+- Wbudowany serwer Express (`services/web-server.js`) serwujący dokumentację, przewodnik komend `/commands`, endpoint `/search-index.json` oraz adres zwrotny OAuth `/notion/oauth/callback`.
+- Lokalne pliki konfiguracji i cache w katalogu `data/` oraz plik `.env`.
 
-## Reporting a Vulnerability
+## Dane poufne
 
-Use this section to tell people how to report a vulnerability.
+- Plik `.env` (tokeny Discord, klucz YouTube Data API v3, poświadczenia OAuth Notion, 32-bajtowy klucz szyfrowania AES-256-GCM) jest ignorowany przez Git. Nie zapisuj realnych wartości do kodu, logów, zrzutów ekranu ani zgłoszeń.
+- `data/notion-auth.min.json` przechowuje szyfrowane tokeny Notion z guild ID jako AAD. Utrata klucza `NOTION_TOKEN_ENCRYPTION_KEY` wymusza ponowną autoryzację każdego serwera.
+- Serwer Express wysyła nagłówki `Content-Security-Policy` (`default-src 'none'`, `script-src 'self'`, `connect-src 'self'`, czcionki Google), `X-Content-Type-Options: nosniff` i `Referrer-Policy: no-referrer`. Trasy nie serwują `data/`, `.env` ani `AGENTS.md`.
+- Adres zwrotny OAuth musi być wystawiony przez HTTPS reverse proxy z wyłączonym logowaniem parametrów zapytania.
 
-Tell them where to go, how often they can expect to get an update on a
-reported vulnerability, what to expect if the vulnerability is accepted or
-declined, etc.
+## Zgłaszanie podatności
+
+Jeżeli znajdziesz lukę bezpieczeństwa, wyślij prywatną wiadomość na adres <jakub@klalo.pl>. Nie publikuj szczegółów w publicznych zgłoszeniach GitHub.
+
+W zgłoszeniu podaj minimalny scenariusz odtworzenia, wpływ i proponowaną korektę. Potwierdzenie otrzymasz w ciągu kilku dni roboczych; wydanie poprawki następuje możliwie najszybciej.
