@@ -39,6 +39,29 @@ Use this map to locate the relevant implementation, not as a substitute for chec
   `aria-current` identifies the current section.
   `/commands` is auto-generated at startup from every `commands/<group>/*.js` via `SlashCommandBuilder.toJSON()`.
   `/search-index.json` returns documents, every `##` heading (anchored by slug), and all commands/subcommands; the `Ctrl+K` client-side search in `web/public/scripts.js` queries it.
+  The header support icon stays to the right of search; it and the footer's “Wesprzyj” link point to `https://buycoffee.to/kubaklalo`.
+  The home hero is followed by a star-themed invitation section using optional `DISCORD_INVITE_URL` (HTTPS without credentials).
+  Missing configuration visibly disables invitation; invalid configuration fails the home request explicitly.
+  Invitation opens a native new tab and plays a temporary full-screen rainbow star flight on the original page; reduced motion uses a static color wash.
+  Flight slowly accelerates on hover or keyboard focus and speeds up on press; its origin follows the button every frame with a soft transparent opening preserving readability.
+  All invitation animation logic is isolated in `web/public/invitation-animation.js`; remove its script tag from the layout to retain only native invitation-link behavior.
+  Background dimming grows slowly; desktop exit restores the background in 160ms, fades individual stars over 110–240ms and ribbons over 220–380ms while shortening trails and slowing motion.
+  Exit has no flash; reduced motion and mobile clean up immediately.
+  Cancellation, focus loss, or hiding the page also cleans up.
+  Coarse-pointer devices without hover automatically run the home animation at 1% speed, with acceleration capped at 0.12 and background dimming capped at 30%; touch does not trigger hover or press effects.
+  Mobile stars use a fixed initial pixel origin and radius so scrolling and browser-toolbar height changes cannot shift or zoom the field.
+  Mobile appearance uses a three-minute exponential fade and bounded exponential acceleration without a sudden ramp; only the button's exact bounds are cleared for readability.
+  Mobile stars and ribbons have damped scroll parallax capped at 2px before depth scaling (4px maximum), disabled for reduced motion.
+  At widths up to 900px a single-row header exposes a hamburger disclosure containing search, external links, and the existing sidebar; it stays above the animation.
+  The mobile menu fills the dynamic viewport below the header, locks background scrolling, and overlays search results above channels without shifting actions.
+  Shared dynamic viewport height sizing covers message screens, sidebar and menu; safe-area padding remains inside the filled menu background.
+  Ambient animation follows soft navigation and pauses when hidden; returning restarts its gradual appearance. Mobile header/footer use safe-area insets and 44px main touch targets.
+  A GitHub repository icon follows the header support link with a normal hover effect; the footer places “Wesprzyj” before GitHub.
+  The compact monochrome footer places navigation beside the name/version and external actions on the right, with author attribution below.
+  Attribution is a single text line with a normal space before the website link; no icons or badges, and mobile wraps without centering.
+  A decorative dot separates identity from navigation; the lower row contains a neutral copyright/license notice without claiming EU compliance.
+  Both support links show a subtle white border glint on hover or keyboard focus, without motion when reduced motion is requested.
+  `images/buycoffee-white.svg` preserves the white cup symbol path from the official `https://buycoffee.to/img/brand/bc-logo.svg` logo, with a symbol-only viewBox.
   Markdown code fences must declare their language or format (`js`, `sh`, `json`, `dotenv`, `text`, etc.); Discord slash examples are plain `text`.
   Code blocks use server-side highlight.js (dotenv uses its INI grammar), with escaped plain text for unknown formats and no auto-detection.
   The language label and copy button live in a separate toolbar outside the horizontally scrolling `pre`; copy only the original code text.

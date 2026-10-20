@@ -261,7 +261,10 @@ function attachSearch() {
   }
 
   input.addEventListener('focus', ensureIndex)
-  input.addEventListener('input', (event) => render(event.target.value))
+  input.addEventListener('input', async () => {
+    await ensureIndex()
+    if (document.activeElement === input) render(input.value)
+  })
   input.addEventListener('keydown', (event) => {
     if (event.key !== 'Escape') return
     input.value = ''
@@ -283,6 +286,52 @@ function attachSearch() {
   })
 }
 
+function attachMobileMenu() {
+  const media = matchMedia('(max-width: 900px)')
+  const toggle = document.querySelector('.mobile-menu-toggle')
+  const menu = document.getElementById('header-menu')
+  const layout = document.querySelector('.app-layout')
+  function setOpen(open) {
+    document.body.classList.toggle('mobile-menu-open', open)
+    toggle.setAttribute('aria-expanded', String(open))
+    toggle.setAttribute('aria-label', open ? 'Zamknij menu' : 'Otwórz menu')
+    layout.inert = open
+    document.querySelector('.discord-footer').inert = open
+  }
+  function close() {
+    setOpen(false)
+  }
+  function sync() {
+    close()
+    const sidebar = document.querySelector('.discord-sidebar')
+    if (media.matches) menu.appendChild(sidebar)
+    else layout.prepend(sidebar)
+  }
+  document.body.classList.add('mobile-nav-ready')
+  toggle.addEventListener('click', () => {
+    setOpen(!document.body.classList.contains('mobile-menu-open'))
+  })
+  document.addEventListener('click', (event) => {
+    if (!media.matches || !document.body.classList.contains('mobile-menu-open')) return
+    if (event.target.closest('#header-menu a')) {
+      close()
+      toggle.focus()
+    } else if (!event.target.closest('.discord-header')) close()
+  })
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && document.body.classList.contains('mobile-menu-open')) {
+      close()
+      toggle.focus()
+    }
+    if (media.matches && (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+      setOpen(true)
+    }
+  })
+  media.addEventListener('change', sync)
+  sync()
+}
+
+attachMobileMenu()
 attachCopyButtons()
 attachSidebarTracking()
 attachSoftNavigation()

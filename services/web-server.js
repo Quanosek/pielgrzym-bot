@@ -216,9 +216,25 @@ async function buildHome() {
     note: 'Jeden kanał YouTube na serwer · Notion opcjonalnie',
     featured: true,
   })
+  const inviteUrl = process.env.DISCORD_INVITE_URL
+  if (inviteUrl) {
+    const parsed = new URL(inviteUrl)
+    if (parsed.protocol !== 'https:' || parsed.username || parsed.password)
+      throw new Error('DISCORD_INVITE_URL must be an HTTPS URL without credentials')
+  }
+  const invitation = `<section class="invite-section" aria-labelledby="invite-title">
+    <h2 id="invite-title">Twoja społeczność. Nowa orbita.</h2>
+    <p>Zaproś Pielgrzyma na swój serwer Discord.</p>
+    ${
+      inviteUrl
+        ? `<a class="discord-btn invite-button" href="${escapeHtml(inviteUrl)}" target="_blank" rel="noopener noreferrer" data-invite>Zaproś bota</a>`
+        : `<button class="discord-btn invite-button" disabled>Zaproś bota</button><p class="invite-unavailable">Zaproszenie jest chwilowo niedostępne.</p>`
+    }
+  </section>`
   return {
     title: 'Pielgrzym',
-    content: hero + `<article class="prose">${markdown.renderer.render(tokens.slice(bodyStart), markdown.options, environment)}</article>`,
+    content:
+      hero + invitation + `<article class="prose">${markdown.renderer.render(tokens.slice(bodyStart), markdown.options, environment)}</article>`,
   }
 }
 
@@ -359,6 +375,7 @@ function layout(title, content, activeSlug = '') {
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="/assets/styles.css">
     <script src="/assets/scripts.js" defer></script>
+    <script src="/assets/invitation-animation.js" defer></script>
   </head>
 
   <body>
@@ -373,17 +390,28 @@ function layout(title, content, activeSlug = '') {
           <div class="brand-info">
             <div class="brand-title-line">
               <a class="brand-name" href="/">Pielgrzym</a>
-              <span class="discord-bot-tag"><svg class="bot-check-icon" width="12" height="12" viewBox="0 0 16 15" aria-hidden="true"><path fill="currentColor" d="M7.4 11.9 3.2 8.1l1.4-1.4 2.8 2.5 5.5-5.5 1.4 1.4-6.9 6.8Z"/></svg>APP</span>
+              <span class="discord-bot-tag"><svg class="bot-check-icon" width="12" height="12" viewBox="0 0 16 15" aria-hidden="true"><path fill="currentColor" d="M7.4 11.9 3.2 8.1l1.4-1.4 2.8 2.5 5.5-5.5 1.4 1.4-6.9 6.8Z"/></svg><span class="bot-tag-label">APP</span></span>
               <span class="version-tag">v0.1.0</span>
             </div>
           </div>
         </div>
 
-        <div class="header-actions">
+        <button class="mobile-menu-toggle header-icon-button" type="button" aria-label="Otwórz menu" aria-expanded="false" aria-controls="header-menu">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+        <div class="header-menu" id="header-menu">
+          <div class="header-actions">
           <div class="search-box">
             <input type="search" id="site-search" class="search-input" placeholder="Szukaj w dokumentacji…" autocomplete="off" aria-label="Wyszukiwarka dokumentacji">
             <kbd class="search-kbd">Ctrl K</kbd>
             <div class="search-results" id="search-results" hidden></div>
+          </div>
+          <a class="header-icon-button support-button" href="https://buycoffee.to/kubaklalo" aria-label="Wesprzyj na BuyCoffee" title="Wesprzyj na BuyCoffee">
+            <span class="support-mark" aria-hidden="true"></span>
+          </a>
+          <a class="header-icon-button github-button" href="https://github.com/Quanosek/Pielgrzym" aria-label="Repozytorium na GitHub" title="Repozytorium na GitHub">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.37.5 0 5.87 0 12.5c0 5.3 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.043-1.61-4.043-1.61-.546-1.387-1.333-1.756-1.333-1.756-1.09-.745.083-.73.083-.73 1.205.085 1.838 1.237 1.838 1.237 1.07 1.835 2.807 1.305 3.492.998.108-.776.418-1.305.762-1.605-2.665-.305-5.467-1.334-5.467-5.93 0-1.31.468-2.38 1.235-3.22-.124-.303-.535-1.524.117-3.176 0 0 1.008-.323 3.3 1.23a11.5 11.5 0 0 1 3.003-.404c1.02.005 2.047.138 3.006.404 2.29-1.553 3.297-1.23 3.297-1.23.654 1.652.243 2.873.12 3.176.77.84 1.233 1.91 1.233 3.22 0 4.608-2.807 5.62-5.48 5.917.43.372.823 1.102.823 2.222 0 1.606-.015 2.9-.015 3.293 0 .322.216.694.825.576C20.565 22.296 24 17.8 24 12.5 24 5.87 18.627.5 12 .5Z"/></svg>
+          </a>
           </div>
         </div>
       </div>
@@ -403,20 +431,29 @@ function layout(title, content, activeSlug = '') {
     </div>
 
     <footer class="discord-footer">
-      <div class="footer-row footer-primary">
-        <span class="footer-brand">Pielgrzym</span>
-        <span class="footer-sep">·</span>
-        <span class="footer-version">v0.1.0</span>
-        <span class="footer-sep">·</span>
-        <a href="https://github.com/Quanosek/Pielgrzym">GitHub</a>
-      </div>
-
-      <div class="footer-row footer-links">
-        <a href="/">Strona główna</a>
-        <span class="footer-sep">·</span>
-        <a href="/table-of-contents">Spis treści</a>
-        <span class="footer-sep">·</span>
-        <a href="/commands">Komendy bota</a>
+      <div class="footer-inner">
+        <div class="footer-top">
+          <div class="footer-main">
+            <div class="footer-identity">
+              <span class="footer-brand">Pielgrzym</span>
+              <span class="footer-version">v0.1.0</span>
+            </div>
+            <span class="footer-divider" aria-hidden="true">·</span>
+            <nav class="footer-nav" aria-label="Nawigacja w stopce">
+              <a href="/">Strona główna</a>
+              <a href="/table-of-contents">Spis treści</a>
+              <a href="/commands">Komendy bota</a>
+            </nav>
+          </div>
+          <div class="footer-actions">
+            <a class="footer-support" href="https://buycoffee.to/kubaklalo">Wesprzyj</a>
+            <a href="https://github.com/Quanosek/Pielgrzym">GitHub</a>
+          </div>
+        </div>
+        <div class="footer-bottom">
+          <p class="footer-legal">Prawa autorskie zastrzeżone z zachowaniem uprawnień udzielonych w licencji projektu. Znaki towarowe należą do ich właścicieli.</p>
+          <p class="footer-author">Jakub Kłało &copy; <a href="https://www.klalo.pl">klalo.pl</a></p>
+        </div>
       </div>
     </footer>
   </body>
