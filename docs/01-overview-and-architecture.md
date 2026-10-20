@@ -31,7 +31,7 @@ Architektura aplikacji została zaprojektowana z zachowaniem maksymalnej prostot
 - **Brak zewnętrznego serwera bazy danych:** Całość stanu konfiguracyjnego i pamięci podręcznej zapisywana jest w plikach JSON w katalogu `data/` z gwarancją serializacji zapisu i atomowości wymiany plików tymczasowych (`.tmp` -> rename).
 - **Discord.js v14:** Klient subskrybuje wyłącznie niezbędny intent `GatewayIntentBits.Guilds`, minimalizując obciążenie sieciowe i pamięciowe.
 - **Wbudowany harmonogram `node-cron` v4:** Wszystkie zadania cykliczne działają wewnątrz procesu bota (nie jest to cron systemowy systemu operacyjnego).
-- **Zintegrowany serwer Express:** Współdzieli port ze statyczną dokumentacją oraz trasą przekierowania OAuth Notion (`/notion/oauth/callback`).
+- **Zintegrowany serwer Express:** Renderuje dokumentację Markdown i katalog komend oraz obsługuje trasę przekierowania OAuth Notion (`/notion/oauth/callback`) na jednym porcie.
 
 ---
 
@@ -66,7 +66,7 @@ Pielgrzym obsługuje model multi-tenant, w którym każdy serwer Discord (`guild
 - Konfiguracja każdego serwera jest indeksowana jego identyfikatorem `guildId` w pliku `data/guild-config.min.json`.
 - Pamięć podręczna filmów i komentarzy jest przypisana ściśle do danego `guildId` w `data/yt-cache.min.json`.
 - Poświadczenia Notion są szyfrowane kluczem AES-256-GCM z dołączonym `guildId` jako Authenticated Associated Data (AAD) w `data/notion-auth.min.json`.
-- Błąd synchronizacji lub brak uprawnień na jednym serwerze Discord nie wpływa na pozostałe serwery podłączone do bota.
+- Błędy zadań są obsługiwane osobno dla każdego serwera. Serwery współdzielą jednak proces, dysk i limit API Google — wyczerpanie tego limitu może wpłynąć na wszystkie.
 
 ---
 
@@ -77,5 +77,9 @@ Pielgrzym obsługuje model multi-tenant, w którym każdy serwer Discord (`guild
 Aby nie marnować limitu zapytań YouTube API (10 000 jednostek dziennie) oraz uniknąć uszkodzenia plików przy nagłym restarcie:
 
 - **Videos Cache:** Bot pobiera listę filmów do pamięci podręcznej. Cykliczny monitoring sprawdza jedynie pierwszą stronę playlisty `Uploads` (1 jednostka API), porównując identyfikatory filmów z cache.
-- **Kolejka zapisu (`writeQueue`):** Wszelkie modyfikacje konfiguracji i pamięci podręcznej trafiają do kolejki obietnic, eliminując wyścigi zapisu.
+- **Kolejka zapisu (`writeQueue`):** Zapisy plików są szeregowane. Nie jest to transakcja obejmująca wcześniejszy odczyt: niezależne operacje odczyt–modyfikacja–zapis mogą nadal nadpisać nowszą konfigurację.
 - **Zapis atomowy:** Plik zapisywany jest najpierw pod nazwą tymczasową z identyfikatorem PID procesu, a następnie atomowo podmieniany za pomocą operacji rename systemu operacyjnego.
+
+Zadania YouTube i odświeżanie cache dla jednego serwera są dodatkowo szeregowane przez `runGuildTask`. Notion ma osobny klucz blokady, więc jego wolna odpowiedź nie blokuje monitoringu YouTube. Blokady działają wyłącznie w jednym procesie — nie umożliwiają bezpiecznego uruchomienia wielu instancji.
+
+`config/index.js` udostępnia zestawienie konfiguracji modułów i ścieżek używane m.in. w komunikacie startowym. Flagi `features` opisują obecność konfiguracji, a nie przełączniki uruchamiania modułów ani test połączenia z usługami. Właściwa walidacja i odczyty środowiska występują również w adapterach i serwerze WWW.

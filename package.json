@@ -1,11 +1,13 @@
 {
   "name": "pielgrzym-bot",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Discord bot for monitoring a selected YouTube channel, sending notifications, tracking statistics, and publishing video entries to Notion",
   "main": "index.js",
   "type": "commonjs",
   "scripts": {
     "start": "nodemon",
+    "pm2:start": "pm2 start ecosystem.config.js",
+    "pm2:restart": "pm2 restart ecosystem.config.js --update-env",
     "deploy:clear": "node deploy-commands.js clear",
     "deploy:guild": "node deploy-commands.js guild",
     "deploy:global": "node deploy-commands.js global",
@@ -27,7 +29,7 @@
     "email": "jakub@klalo.pl",
     "url": "https://www.klalo.pl"
   },
-  "license": "ISC",
+  "license": "AGPL-3.0-only",
   "packageManager": "pnpm@11.28.6",
   "engines": {
     "node": ">=24",

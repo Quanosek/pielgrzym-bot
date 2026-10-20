@@ -37,7 +37,7 @@ W niniejszym rozdziale zebrano najczęstsze trudności konfiguracyjne i operacyj
 1. Wywołaj komendę `/youtube status` i upewnij się, że monitorowanie jest włączone (`enabled: true`), a kanał tekstowy jest przypisany.
 2. Sprawdź, czy rola bota posiada na tym kanale uprawnienia: `ViewChannel`, `SendMessages`, `EmbedLinks`.
 3. Wywołaj testowe sprawdzenie komendą `/youtube check type:notifications-videos`.
-4. Sprawdź konsolę bota — jeśli pojawił się komunikat o limicie `quotaExceeded`, bezpłatny dzienny limit Google został wyczerpany i zresetuje się o 09:00 rano czasu polskiego.
+4. Sprawdź konsolę bota — `quotaExceeded` oznacza wyczerpanie limitu projektu. Reset przypada na 00:00 `America/Los_Angeles`, zwykle 09:00 w Polsce, przejściowo 08:00 przy różnych terminach zmiany czasu.
 
 ---
 
@@ -96,8 +96,20 @@ Wbudowany serwer Express (`services/web-server.js`) prezentuje dokumentację i n
 
 - **Strona główna (`/`):** renderuje zawartość pliku `README.md` z dodatkowym gradientowym kafelkiem powitalnym.
 - **Spis treści (`/table-of-contents`):** gradientowa siatka siedmiu rozdziałów z zakładkami nagłówków `##`.
-- **Komendy (`/commands`):** przewodnik generowany dynamicznie z `commands/<grupa>/*.js` przez `SlashCommandBuilder.toJSON()`. Każda zmiana nazw, opisów lub parametrów komendy automatycznie aktualizuje widok.
+- **Komendy (`/commands`):** przewodnik generowany podczas startu z `commands/<grupa>/*.js` przez `SlashCommandBuilder.toJSON()`. Zmiana definicji wymaga restartu serwera WWW, a w Discordzie także ponownego wdrożenia komend.
 - **Wyszukiwarka (`Ctrl + K` / `⌘ + K`):** pole wyszukiwania w prawym górnym rogu zapytuje endpoint `/search-index.json`. Wyniki obejmują dokumenty, poszczególne sekcje `##`, komendy i podkomendy. Wybranie wyniku automatycznie przewija do odpowiedniej sekcji.
 
 > **Dostępność sieciowa:**
 > Wystawienie serwera do internetu wymaga reverse proxy z HTTPS. Nagłówek `Content-Security-Policy` nie zezwala na skrypty i źródła zewnętrzne poza aktywami `self` i czcionkami Google; nie dodawaj do widoków `<script>` inline ani zewnętrznych skryptów.
+
+Na telefonie wyszukiwarka i lista kanałów znajdują się pod hamburgerem. `Escape` zamyka menu, a `Ctrl + K` / `⌘ + K` otwiera je i kieruje fokus do wyszukiwarki. Wyniki przykrywają kanały bez zmiany pozycji przycisków. Pełnoekranowe tło dopasowuje się do dostępnej wysokości; ustawienie ograniczonego ruchu wyłącza ruch gwiazd i paralaksę zaproszenia.
+
+Jeśli po aktualizacji widzisz poprzednią wersję stylów lub skryptów, odśwież stronę z pominięciem pamięci podręcznej. Zasoby `/assets` i `/images` mają godzinny czas cache. Brak aktywnego zaproszenia oznacza brak `DISCORD_INVITE_URL`, a nie błąd połączenia z Discordem.
+
+## 7.7. Granice weryfikacji, prywatność i licencja
+
+`pnpm validate` sprawdza formatowanie i ESLint. Nie loguje bota, nie weryfikuje uprawnień w rzeczywistym serwerze i nie potwierdza dostępu do Notion. Repozytorium nie zawiera stałego zestawu testów ani skryptu `test`; dodatkowe kontrole wykonuje się lokalnie na mockach i odizolowanym serwerze dokumentacji, bez odczytu prywatnych plików runtime.
+
+Udostępnianie instancji publicznie wymaga oceny rzeczywiście przetwarzanych danych, logów reverse proxy i usług zewnętrznych. Callback OAuth nie powinien mieć logowanych parametrów zapytania. Stopka z prawami autorskimi nie zastępuje informacji o prywatności ani nie stanowi potwierdzenia zgodności z RODO czy przepisami UE.
+
+Projekt korzysta z licencji GNU Affero General Public License v3.0 (`AGPL-3.0-only`), zgodnie z plikiem [LICENSE](https://github.com/Quanosek/Pielgrzym/blob/HEAD/LICENSE) i deklaracją w `package.json`. Przy udostępnianiu zmodyfikowanej wersji przez sieć zapewnij użytkownikom dostęp do odpowiadającego jej kodu źródłowego zgodnie z sekcją 13. Po wdrożeniu własnych zmian zaktualizuj odnośnik „Kod źródłowy” w stopce, aby prowadził do kodu działającej wersji, a nie wyłącznie do oryginalnego repozytorium.

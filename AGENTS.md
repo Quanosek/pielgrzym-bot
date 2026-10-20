@@ -17,10 +17,34 @@ Use this map to locate the relevant implementation, not as a substitute for chec
 - Preserve user-provided text, external content, usernames, URLs, product names, and API identifiers without translation.
   For example, `/echo` forwards the user's text and YouTube notifications retain the original video titles and comments.
 
+## Visual clarity and controlled maintenance
+
+- Preserve the established dark graphite palette, restrained gradients, compact spacing, and Discord-inspired hierarchy.
+  Reuse existing components and tokens; do not add decorative icons, badges, colors, repeated text, or large padding without a clear request.
+- Keep controls visually consistent in default, hover, focus, and disabled states. The animated border is a deliberate support-link exception, not a default for every control.
+- Verify optical alignment, not only flex-box bounds. Preserve readable labels, visible keyboard focus, safe areas, and usable touch targets.
+- Check desktop and narrow mobile layouts, hamburger navigation, search overlays, dynamic viewport changes, long content, and reduced motion.
+  Use Playwright when changing layout or interactions; report simulated-device limits honestly.
+- Keep source, identifiers, and file paths in English; keep README, guides, and interface text in Polish. Preserve upstream names and user content.
+- Read affected callers before editing. Make complete, surgical changes and preserve locks, persistence contracts, permissions, and existing user work.
+  Avoid speculative refactors, dependencies, abstractions, or redesigns. Keep optional visual effects detachable from native link behavior.
+- Document procedures as prerequisites, exact commands, expected outcomes, and failure/recovery steps. Distinguish development start, deployment, and process restart.
+- Validate with existing formatting/linting and targeted isolated mocks or browser checks. Never start the live bot, use real API quota, deploy commands, or change runtime data just to verify code.
+  State what offline checks cannot certify; do not claim end-to-end delivery or legal compliance based on local checks.
+- Keep README a standalone introduction and quick start, detailed procedures in `docs/`, and these instructions focused on implementation constraints.
+  Keep public feature descriptions consistent with actual behavior and known limitations.
+
 ## Purpose and runtime
 
 - Single-process Discord bot for monitoring one selected YouTube channel per guild, routing notifications to selected Discord channels, tracking statistics, and optionally adding published videos to Notion. Bot-authored user-facing messages are Polish.
 - CommonJS JavaScript, Node.js >= 24, pnpm >= 11; package manager pinned in `package.json`.
+- `pnpm pm2:start` starts `ecosystem.config.js`; `pnpm pm2:restart` restarts it with `--update-env`.
+  PM2 must already be installed in the selected Node environment. Neither shortcut installs dependencies nor deploys slash commands.
+  `run.sh` uses these shortcuts after installation and global command deployment. Never run them merely to validate a change.
+- `config/index.js` provides module configuration summaries for startup logging, not feature-disable switches or remote health checks.
+  Runtime adapters still read and validate their own environment settings; do not describe it as the sole configuration validator.
+- Server ownership: `index.js` starts Express through `services/web-server.js`; that service configures HTTP routes and mounts callback handlers from `services/notion-oauth.js`.
+  OAuth state, callback exchange, and confirmation flow belong to the OAuth service. Do not introduce a second listener for Notion.
 - No transpilation, database server, or build step. One Express server serves project documentation and the Notion OAuth callback route.
 - `discord.js` 14 handles Discord; the client subscribes only to `GatewayIntentBits.Guilds`.
 - `node-cron` 4 is an npm dependency running inside the bot process, NOT a built-in Node.js module or operating-system cron.
@@ -38,6 +62,7 @@ Use this map to locate the relevant implementation, not as a substitute for chec
   Use zero-duration Web Animations keyframes without inline style attributes; scroll speed determines the line's speed, with no trailing motion.
   `aria-current` identifies the current section.
   `/commands` is auto-generated at startup from every `commands/<group>/*.js` via `SlashCommandBuilder.toJSON()`.
+  Its parameter lists include declared choice labels and machine values; restart after changing command definitions.
   `/search-index.json` returns documents, every `##` heading (anchored by slug), and all commands/subcommands; the `Ctrl+K` client-side search in `web/public/scripts.js` queries it.
   The header support icon stays to the right of search; it and the footer's “Wesprzyj” link point to `https://buycoffee.to/kubaklalo`.
   The home hero is followed by a star-themed invitation section using optional `DISCORD_INVITE_URL` (HTTPS without credentials).

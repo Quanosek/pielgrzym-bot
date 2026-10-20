@@ -75,10 +75,12 @@ YouTube Data API v3 udostępnia w publicznym obiekcie statystyk wyłącznie łą
    - Dopóki bot nie zgromadzi co najmniej 30 dni historii, kanał wyświetla łączną liczbę wyświetleń kanału (np. `Wyświetlenia: 3,4 mln`).
 3. **Faza estymacji średniej (30 – 364 dni historii):**
    - Bot oblicza przyrost wyświetleń pomiędzy najstarszym a najnowszym wpisem i wyznacza średnią dzienną:
-     $$\text{Średnia dzienna} = \frac{\text{Wyświetlenia}_\text{nowe} - \text{Wyświetlenia}_\text{stare}}{\text{Dni}}$$
+     `Średnia dzienna = (wyświetlenia nowe − wyświetlenia stare) / liczba dni`
    - Następnie mnoży wynik przez 365, podając estymowaną roczną liczbę wyświetleń.
 4. **Faza pełnej historii rocznej (>= 365 dni historii):**
-   - Bot odnajduje wpis sprzed 365 dni i odejmuje go od stanu bieżącego, prezentując rzeczywistą liczbę wyświetleń z ostatnich 12 miesięcy.
+   - Bot wybiera dostępny punkt historii z datą nie wcześniejszą niż granica 365 dni i odejmuje go od stanu bieżącego. Przy lukach w historii nie jest to dokładny pomiar ostatnich 12 miesięcy ani raport YouTube Analytics.
+
+Wynik ujemny jest ograniczany do zera. Wyłączenie licznika wyświetleń usuwa również jego historię; ponowne włączenie rozpoczyna jej zbieranie od nowa.
 
 ---
 

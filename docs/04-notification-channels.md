@@ -63,9 +63,9 @@ Bot publikuje powiadomienia w postaci sformatowanych kart (embedów Discord) w j
 - **Nagłówek:** Nazwa kanału YouTube z miniaturą awatara kanału.
 - **Tytuł embeda:** `Opublikowano nowy film! 🎬` z bezpośrednim linkiem do filmu (`https://www.youtube.com/watch?v=...`).
 - **Opis:** Pełny, zdekodowany z encji HTML tytuł filmu.
-- **Miniatura:** Duża grafika okładki filmu pobrana z YouTube.
-- **Pola:** Sformatowany relatywny znacznik czasu publikacji Discorda (`<t:timestamp:f>`).
-- **Podsumowanie po 45 minutach:** Jeśli film nie jest archiwalny, bot po 45 minutach wysyła dodatkowe podsumowanie z liczbą wyświetleń, polubień i pierwszych komentarzy.
+- **Miniatura:** Okładka filmu pobrana z YouTube, prezentowana jako miniatura embeda.
+- **Pola:** Znacznik daty i godziny publikacji Discorda (`<t:timestamp:f>`).
+- **Podsumowanie po 45 minutach:** Bot planuje dodatkowe podsumowanie z liczbą wyświetleń, polubień i komentarzy; przy późnym wykryciu filmu uruchamia je od razu. Timer nie przetrwa restartu.
 
 ### Powiadomienie o nowym komentarzu
 

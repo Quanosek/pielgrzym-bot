@@ -117,7 +117,7 @@ W momencie pomyślnego zakończenia konfiguracji w `/notion enable` bot oznacza 
 
 <div class="section-subtitle">Weryfikacja istnienia wpisu, flaga uncertain i komendy serwisowe</div>
 
-Aby wyeliminować ryzyko zduplikowanych wpisów w Notion:
+Aby ograniczyć ryzyko zduplikowanych wpisów w Notion:
 
 1. **Deduplikacja po URL:** Przed utworzeniem nowego wiersza bot wysyła zapytanie `data_sources/:id/query` z filtrem na kolumnę URL. Jeśli wiersz z takim linkiem już istnieje, zostaje natychmiast oznaczony jako ukończony bez tworzenia duplikatu.
 2. **Flaga `uncertain`:** Przed wysłaniem zapytania tworzenia strony bot oznacza wpis w pliku kolejki jako niepewny (`uncertain: true`). Jeśli połączenie zostanie przerwane (np. timeout lub błąd 5xx), bot nie ponawia zapisu automatycznie, dopóki administrator nie sprawdzi tabeli.
@@ -128,3 +128,34 @@ Aby wyeliminować ryzyko zduplikowanych wpisów w Notion:
    Pozwala administratorowi ręcznie odblokować ponowną próbę zapisu po upewnieniu się, że film rzeczywiście nie został utworzony w Notion.
 4. **Rozłączenie (`/notion disconnect`):**
    Usuwa lokalne poświadczenia danego serwera i wstrzymuje publikację bez usuwania dotychczasowych wpisów w Notion.
+
+Nie ma jednej transakcji obejmującej lokalny plik i usługę Notion. Ręczne utworzenie wpisu równolegle z botem, zmiana URL lub zbyt wczesne odblokowanie ponowienia mogą nadal prowadzić do duplikatów. Przed `/notion retry` sprawdź również, że poprzednie tworzenie nie jest już wykonywane.
+
+## 6.8. Komendy obsługi, zmiana konfiguracji i wstrzymywanie
+
+Wszystkie komendy `/notion` wymagają administratora serwera lub zgodnego `OWNER_ID` i odpowiadają prywatnie:
+
+| Komenda              | Działanie                                                                    |
+| -------------------- | ---------------------------------------------------------------------------- |
+| `/notion connect`    | Rozpoczyna autoryzację i wymaga potwierdzenia przestrzeni w Discordzie       |
+| `/notion enable`     | Wybiera źródło, kolumny i wiąże publikację z aktualnym kanałem YouTube       |
+| `/notion settings`   | Ponownie uruchamia mapowanie kolumn dla wybranego źródła                     |
+| `/notion status`     | Pokazuje mapowanie, liczbę wpisów, niezgodności połączenia i niepewne zapisy |
+| `/notion check`      | Sprawdza dostęp i schemat, następnie przetwarza do pięciu należnych wpisów   |
+| `/notion disable`    | Wstrzymuje publikowanie, zachowując kolejkę i istniejące strony              |
+| `/notion retry`      | Odblokowuje wskazany niepewny zapis po ręcznym sprawdzeniu                   |
+| `/notion disconnect` | Usuwa lokalne poświadczenia i unieważnia oczekujące panele                   |
+
+Rozpoczęcie mapowania wstrzymuje publikację do ukończenia kreatora. Listy kolumn, źródeł i statusów mają strony po 25 opcji; panele sprawdzają aktualną rewizję konfiguracji i działają po restarcie. Samo oczekiwanie na autoryzację OAuth nie przetrwa restartu.
+
+Ponowne połączenie przez `/notion connect` wymaga ponownego `/notion enable`. Rozłączenie lokalne nie odwołuje instalacji u dostawcy — dostęp można dodatkowo cofnąć w Notion. Wyłączenie YouTube, zmiana monitorowanego kanału lub niezgodna przestrzeń Notion wstrzymują dostarczanie; bot nie przełącza samodzielnie powiązania na inny kanał.
+
+## 6.9. Kolejka, ponawianie i granice synchronizacji
+
+Stan jest zapisywany w `data/notion-cache.min.json`, w pozycjach oczekujących i ukończonych identyfikowanych parą źródło–film. Po restarcie wraca kolejka, ale nie sesje OAuth. Żądania Notion są rozdzielone o co najmniej 350 ms; opóźnienie ponowienia rośnie od minuty do godziny i respektuje `Retry-After` przy HTTP 429.
+
+Niepewne próby są ponownie sprawdzane po dokładnym URL, ale bot nie tworzy ich ponownie w ciemno. Wpisy jeszcze niewysłane korzystają z aktualnego mapowania; niepewne zachowują poprzednie do uzgodnienia wyniku. Uszkodzony magazyn stanu powoduje jawny błąd zamiast wyczyszczenia historii.
+
+Publikator nie pobiera brakujących filmów z YouTube. Jego opóźnienie zależy od odświeżenia cache, minutowego harmonogramu i zaległości kolejki. Ukończone wpisy nie są naprawiane ani aktualizowane: późniejsza zmiana tytułu filmu lub usunięcie strony Notion nie powoduje automatycznego przepisania ani odtworzenia strony.
+
+Adapter korzysta z API źródeł danych Notion w wersji `2026-03-11`. Po HTTP 401 dopuszcza jedno szeregowane odświeżenie tokenu; rotowane poświadczenia są utrwalane. Zmiana przestrzeni przy odświeżaniu nie jest akceptowana. Dostęp do rzeczywistej tabeli i uprawnienie Insert content można potwierdzić dopiero w autoryzowanej przestrzeni, nie testem offline.

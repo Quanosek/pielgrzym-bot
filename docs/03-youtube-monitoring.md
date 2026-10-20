@@ -88,6 +88,21 @@ Harmonogramy sterowane są przez bibliotekę `node-cron` wewnątrz procesu Node.
 
 Google przydziela bezpłatny limit **10 000 jednostek dziennie** na projekt w Google Cloud. Wszystkie metody odczytu (`.list`) stosowane przez bota kosztują **1 jednostkę** za stronę:
 
-- Standardowy dzienny koszt bazowy dla 1 serwera i ~200 filmów wynosi około **5 090 jednostek**, co bezpiecznie mieści się w darmowym limicie.
-- **Brak lokalnego sztucznego kagańca:** Bot wykorzystuje pełny dostępny limit Google. Jeśli Google zwróci błąd limitu (`quotaExceeded` / `dailyLimitExceeded`), monitorowanie natychmiast przerywa bieżącą pętlę i oczekuje na reset.
+- Przykładowy koszt bazowy dla 1 serwera, 214 filmów (100 aktywnych i 114 starszych), wszystkich liczników i powiadomień oraz jednej strony wyników na film to około **5 090 jednostek na zwykłą dobę**. To szacunek bez ponowień, dodatkowych stron i ręcznych kontroli, nie gwarancja zmieszczenia się w limicie.
+- **Brak lokalnego limitu:** Bot wykorzystuje przydział Google bez własnego dziennego licznika. Błąd `quotaExceeded` / `dailyLimitExceeded` kończy bieżący skan. Kolejne zaplanowane przebiegi nadal mogą próbować odczytu; nie ma trwałej blokady do resetu.
 - **Reset limitu:** Limit resetuje się o **00:00 czasu pacyficznego** (`America/Los_Angeles`), co w Polsce odpowiada godzinie 09:00 (lub 08:00 podczas rozbieżności czasu letniego/zimowego). Po tej godzinie zapytania automatycznie zaczynają przechodzić pomyślnie.
+
+Każda dodatkowa strona komentarzy lub odpowiedzi, ponowienie żądania, ręczna kontrola i podsumowanie filmu zwiększa koszt. Więcej niż 100 filmów opublikowanych w ostatnich 60 dniach zwiększa liczbę aktywnych pozycji. Limit jest wspólny dla projektu Google, a rzeczywiste zużycie sprawdza się w Cloud Console.
+
+## 3.6. Ręczne sterowanie i ograniczenia wykrywania
+
+- `/youtube status [ephemeral:true]` pokazuje stan monitoringu, kanałów i liczników.
+- `/youtube check` uruchamia wybraną kontrolę filmów, komentarzy lub licznika; typy opisano w rozdziale o kanałach powiadomień.
+- `/youtube disable` bez opcji wyłącza monitoring i czyści cache YouTube tego serwera. Notion zachowuje swoją kolejkę, ale wstrzymuje dostarczanie przy nieaktywnym monitoringu.
+- Ponowne `/youtube enable` wyłącza dotychczasowy monitoring **przed** sprawdzeniem nowego kanału. Nieprawidłowa nazwa nie przywraca automatycznie starej konfiguracji.
+
+Skan wątków i pobieranie odpowiedzi mają limit po 10 stron, po maksymalnie 100 pozycji. Odpowiedzi pominięte w danych wątku są pobierane osobno, ale nowe odpowiedzi do starych wątków za granicą wcześniejszego zakończenia skanu mogą pozostać niewykryte. Niezmieniona łączna liczba komentarzy nie dowodzi braku zmian we wszystkich odpowiedziach.
+
+Identyfikatory widzianych komentarzy są zapisywane przed wysyłką powiadomień. Nieudana wysyłka Discord może więc utracić powiadomienie; nie ma trwałej kolejki dostarczenia. Historia 10 000 ID jest skończona. Monitoring filmów czyta tylko 50 najnowszych pozycji — długa przerwa lub duża liczba publikacji może pozostawić luki.
+
+Podsumowania po 45 minutach korzystają z nietrwałych timerów: restart je usuwa. Gdy nowo wykryty film ma już ponad 45 minut, podsumowanie jest planowane od razu. Harmonogramy to docelowe częstotliwości, nie gwarantowany czas dostarczenia.

@@ -134,6 +134,7 @@ function mapParameter(parameter) {
     description: parameter.description,
     required: !!parameter.required,
     type: OPTION_TYPES[parameter.type] || String(parameter.type),
+    choices: parameter.choices || [],
   }
 }
 
@@ -270,7 +271,13 @@ function renderParams(params) {
       (p) =>
         `<li><code>${escapeHtml(p.name)}</code>` +
         ` <span class="param-type">${escapeHtml(p.type)}${p.required ? ' • wymagane' : ''}</span>` +
-        ` — ${escapeHtml(p.description)}</li>`,
+        ` — ${escapeHtml(p.description)}` +
+        (p.choices.length
+          ? `<div class="param-choices">Dostępne wartości: ${p.choices
+              .map((choice) => `${escapeHtml(choice.name)} (<code>${escapeHtml(String(choice.value))}</code>)`)
+              .join(', ')}</div>`
+          : '') +
+        `</li>`,
     )
     .join('')
   return `<ul class="command-params">${items}</ul>`
@@ -391,7 +398,7 @@ function layout(title, content, activeSlug = '') {
             <div class="brand-title-line">
               <a class="brand-name" href="/">Pielgrzym</a>
               <span class="discord-bot-tag"><svg class="bot-check-icon" width="12" height="12" viewBox="0 0 16 15" aria-hidden="true"><path fill="currentColor" d="M7.4 11.9 3.2 8.1l1.4-1.4 2.8 2.5 5.5-5.5 1.4 1.4-6.9 6.8Z"/></svg><span class="bot-tag-label">APP</span></span>
-              <span class="version-tag">v0.1.0</span>
+              <span class="version-tag">v0.1.1</span>
             </div>
           </div>
         </div>
@@ -436,7 +443,7 @@ function layout(title, content, activeSlug = '') {
           <div class="footer-main">
             <div class="footer-identity">
               <span class="footer-brand">Pielgrzym</span>
-              <span class="footer-version">v0.1.0</span>
+              <span class="footer-version">v0.1.1</span>
             </div>
             <span class="footer-divider" aria-hidden="true">·</span>
             <nav class="footer-nav" aria-label="Nawigacja w stopce">
@@ -451,7 +458,7 @@ function layout(title, content, activeSlug = '') {
           </div>
         </div>
         <div class="footer-bottom">
-          <p class="footer-legal">Prawa autorskie zastrzeżone z zachowaniem uprawnień udzielonych w licencji projektu. Znaki towarowe należą do ich właścicieli.</p>
+          <p class="footer-legal">Projekt na licencji <a href="https://github.com/Quanosek/Pielgrzym/blob/HEAD/LICENSE">GNU AGPL v3.0</a>. <a href="https://github.com/Quanosek/Pielgrzym">Kod źródłowy</a>. Znaki towarowe należą do ich właścicieli.</p>
           <p class="footer-author">Jakub Kłało &copy; <a href="https://www.klalo.pl">klalo.pl</a></p>
         </div>
       </div>

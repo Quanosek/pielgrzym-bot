@@ -12,4 +12,4 @@ fi
 pnpm install
 pnpm deploy:global
 
-pm2 restart ecosystem.config.js || pm2 start ecosystem.config.js
+pnpm pm2:restart || pnpm pm2:start

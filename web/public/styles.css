@@ -240,17 +240,23 @@ a:focus-visible {
 
 .discord-avatar-container {
   position: relative;
-  width: 38px;
-  height: 38px;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
   flex-shrink: 0;
+  padding: 2px;
+  border: 3px solid var(--accent);
+  border-radius: 50%;
+  background: var(--bg-darkest);
 }
 
 .discord-avatar-img {
-  width: 38px;
-  height: 38px;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
   border-radius: 50%;
   object-fit: cover;
-  border: 1.5px solid var(--accent);
   display: block;
   background: var(--bg-card);
 }
@@ -1856,6 +1862,11 @@ a:focus-visible {
 @media (max-width: 900px) {
   :root {
     --header-height: calc(68px + env(safe-area-inset-top));
+  }
+
+  .discord-avatar-container {
+    width: 42px;
+    height: 42px;
   }
 
   body.mobile-menu-open {

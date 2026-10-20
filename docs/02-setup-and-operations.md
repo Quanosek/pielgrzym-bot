@@ -40,6 +40,7 @@ DOTENV_CONFIG_QUIET=true
 # Discord
 CLIENT_ID=twoje_client_id_discord
 DISCORD_TOKEN=twoj_tajny_token_bota
+DISCORD_INVITE_URL=https://discord.com/oauth2/authorize?client_id=twoje_client_id&scope=bot%20applications.commands
 OWNER_ID=twoje_id_uzytkownika_discord
 GUILD_ID=opcjonalne_id_serwera_dla_testow
 
@@ -85,6 +86,8 @@ pnpm start
 
 Polecenie `pnpm start` uruchamia narzędzie `nodemon`, które automatycznie restartuje aplikację po wykryciu zmian w kodzie źródłowym (z wyłączeniem folderów `data/*` i `logs/*`).
 
+`DISCORD_INVITE_URL` jest opcjonalnym, publicznym adresem instalacji bota, nie tokenem. Skopiuj link z Discord Developer Portal ze scope `bot` i `applications.commands` oraz uprawnieniami potrzebnymi wybranym funkcjom. Wartość musi używać HTTPS i nie zawierać loginu ani hasła. Brak wartości wyłącza przycisk na stronie głównej; błędna wartość powoduje odpowiedź HTTP 500 tej strony. Komenda `/invite` ma inne przeznaczenie: zaprasza użytkowników do bieżącego serwera.
+
 ---
 
 ## 2.4. Wdrażanie komend slash w Discordzie
@@ -119,11 +122,15 @@ Po uruchomieniu bota automatycznie startuje serwer Express pod adresem:
 Serwer ten pełni cztery funkcje:
 
 1. **Dostęp do dokumentacji:** Udostępnia niniejszy podręcznik w przeglądarce pod adresem `http://127.0.0.1:3001/` z podziałem na rozdziały `/docs/:slug`. Strona główna łączy sekcję wprowadzającą ze schematem YouTube → Discord / Notion i treścią pliku `README.md` od pierwszego nagłówka `##`, bez powtarzania tytułu i wstępu. Na GitHubie README pozostaje samodzielnym wprowadzeniem. Względne odnośniki do przewodników Markdown są w serwisie zamieniane na trasy `/docs/:slug`, a `/table-of-contents` prezentuje listę rozdziałów.
-2. **Przewodnik po komendach:** Trasa `/commands` generowana jest dynamicznie z plików `commands/<grupa>/*.js` — lista komend, podkomend oraz typów parametrów pozostaje zawsze zgodna z kodem bota, bez ręcznego dublowania opisów.
+2. **Przewodnik po komendach:** Trasa `/commands` generowana jest podczas startu z plików `commands/<grupa>/*.js`. Pokazuje komendy, podkomendy, typy i wymagane parametry oraz zdefiniowane wartości wyboru. Po zmianie definicji zrestartuj proces, a komendy w Discordzie zarejestruj ponownie.
 3. **Wyszukiwarka i nawigacja:** Pole wyszukiwania (`Ctrl + K`) odpytuje endpoint `/search-index.json` zawierający dokumenty, nagłówki `##` oraz komendy. Wybranie wyniku automatycznie przewija do odpowiedniej sekcji. Lista po lewej wyróżnia bieżący rozdział, podąża za aktualną sekcją podczas przewijania dokumentu i przewija własny obszar, aby odpowiednia pozycja pozostała widoczna. Podtytuły nie są podświetlane; postęp zaznacza wyłącznie bardzo subtelna, ciągła linia o szerokości jednego piksela. Jej wypełnienie aktualizuje się bez opóźnienia, również pomiędzy nagłówkami: wolne przewijanie daje wolny ruch, a szybkie odpowiednio szybszy. Po zatrzymaniu przewijania linia również się zatrzymuje.
 4. **Obsługa OAuth Notion:** Odbiera powrót przeglądarki po autoryzacji pod adresem `/notion/oauth/callback`, eliminując konieczność uruchamiania osobnego portu. Endpoint `/healthz` zwraca `{"status":"ok"}` dla monitorowania zewnętrznego.
 
 W przypadku wystawienia dokumentacji i autoryzacji do sieci publicznej, należy umieścić aplikację za serwerem reverse proxy (np. Nginx lub Caddy) z certyfikatem SSL/TLS (HTTPS).
+
+W widoku do 900 px nawigacja, wyszukiwarka i linki zewnętrzne są schowane pod hamburgerem. Menu wypełnia dostępną wysokość ekranu, uwzględnia bezpieczne obszary urządzenia i blokuje przewijanie tła. Wyniki wyszukiwania nakładają się na listę kanałów bez przesuwania przycisków. Wysokości paneli i ekranów komunikatów korzystają z dynamicznego obszaru przeglądarki.
+
+Pod sekcją wprowadzającą strony głównej znajduje się gwiezdny przycisk zaproszenia. Na desktopie efekt rozwija się przy najechaniu i przyspiesza przy naciśnięciu; po opuszczeniu przycisku warstwy stopniowo zanikają. Na urządzeniach dotykowych bez hoveru efekt rozwija się automatycznie, znacznie wolniej, z subtelną paralaksą. Ustawienie ograniczonego ruchu wyłącza ruch gwiazd i paralaksę. Link otwiera się w nowej karcie niezależnie od animacji. Aby odłączyć wyłącznie efekt, usuń znacznik skryptu `/assets/invitation-animation.js` z szablonu w `services/web-server.js`; nie zmieniaj głównego skryptu nawigacji.
 
 Bloki kodu w dokumentacji Markdown określają język lub format po otwierających trzech znakach grawisu, np. `sh`, `js`, `json`, `dotenv` albo `text`. Serwis koloruje składnię na serwerze według tej deklaracji; `text` pozostaje zwykłym tekstem, odpowiednim również dla komend Discorda. Nieznane formaty są wyświetlane bez kolorowania. Pasek z nazwą formatu i przyciskiem **Kopiuj** pozostaje nieruchomy podczas przewijania kodu w bok. Kopiowana jest wyłącznie treść kodu, bez etykiety i przycisku.
 
@@ -159,8 +166,32 @@ Na serwerze produkcyjnym zaleca się użycie menedżera procesów PM2 i dołącz
 bash ./run.sh
 ```
 
+Wymagane są Git, Bash, nvm i wcześniej zainstalowany PM2 dostępny w środowisku wybranego Node.js. Samo `pnpm install` nie instaluje PM2. Skrypt pobiera kod, wybiera Node.js 24, jeśli bieżąca wersja jest starsza, instaluje zależności, rejestruje komendy globalne i próbuje restartu, a następnie startu procesu.
+
+Skróty do samego zarządzania procesem:
+
+```sh
+pnpm pm2:start
+pnpm pm2:restart
+```
+
+- `pm2:start` wykonuje `pm2 start ecosystem.config.js` — użyj przy pierwszym uruchomieniu.
+- `pm2:restart` wykonuje `pm2 restart ecosystem.config.js --update-env` — restartuje istniejący proces i odświeża środowisko PM2. Nie jest to ponowna rejestracja komend.
+- `.env` jest odczytywany przy starcie aplikacji. Zmienne już ustawione w środowisku procesu mają pierwszeństwo przed wartościami z `.env`.
+- Nie uruchamiaj jednocześnie nodemon i PM2 na tych samych plikach `data/`.
+
 Plik konfiguracyjny `ecosystem.config.js` definiuje:
 
 - Dokładnie **jedną instancję** procesu (`instances: 1`). Uruchomienie wielu instancji jest zabronione z powodu wbudowanych blokad in-memory oraz lokalnych plików JSON.
 - Automatyczny restart po awarii.
-- Ignorowanie katalogu `data/` przed restartami.
+- Wyłączone obserwowanie plików (`watch: false`); zmiana kodu wymaga jawnego restartu.
+- Logi w `logs/out.log` i `logs/error.log`.
+
+Stan i logi sprawdzisz poleceniami:
+
+```sh
+pm2 status
+pm2 logs pielgrzym-bot --lines 100 --nostream
+```
+
+`/healthz` potwierdza odpowiedź serwera WWW, nie poprawność połączenia z Discordem ani dostęp do API. Po wdrożeniu sprawdź również logi i `/youtube status`, a dla skonfigurowanego Notion `/notion status`. Ręczne `/youtube check` i `/notion check` wykonują rzeczywiste operacje — używaj ich świadomie.
