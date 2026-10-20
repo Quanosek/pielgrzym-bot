@@ -177,6 +177,10 @@ function attachSoftNavigation() {
       const response = await fetch(url, { headers: { Accept: 'text/html' }, cache: 'no-store' })
       if (!response.ok) return void (window.location.href = target)
       const parsed = new DOMParser().parseFromString(await response.text(), 'text/html')
+      if (parsed.querySelector('meta[name="app-version"]')?.content !== document.querySelector('meta[name="app-version"]')?.content) {
+        window.location.href = target
+        return
+      }
       const nextSidebar = parsed.querySelector('.discord-sidebar')
       const nextWrapper = parsed.querySelector('.content-wrapper')
       if (!nextSidebar || !nextWrapper) return void (window.location.href = target)

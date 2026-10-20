@@ -1741,6 +1741,16 @@ a:focus-visible {
   white-space: nowrap;
 }
 
+.footer-mark {
+  display: inline-block;
+  width: 15px;
+  height: 15px;
+  margin-left: 0.45rem;
+  vertical-align: -3px;
+  filter: brightness(0) invert(1);
+  opacity: 0.5;
+}
+
 .footer-legal {
   flex: 1 1 24rem;
   margin: 0;

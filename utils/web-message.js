@@ -1,5 +1,6 @@
 const { STATUS_CODES } = require('node:http')
 const { escapeHtml } = require('markdown-it')().utils
+const { assetUrl, renderIcons } = require('./web-assets')
 
 function sendMessage(response, { status, title, message, detail = '', helpHref = '/table-of-contents', helpLabel = 'Spis treści' }) {
   const success = status >= 200 && status < 300
@@ -10,7 +11,7 @@ function sendMessage(response, { status, title, message, detail = '', helpHref =
       'Referrer-Policy': 'no-referrer',
       'X-Content-Type-Options': 'nosniff',
       'Content-Security-Policy':
-        "default-src 'none'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'",
+        "default-src 'none'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self'; manifest-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'",
     })
     .type('html').send(`<!doctype html>
 <html lang="pl">
@@ -19,7 +20,8 @@ function sendMessage(response, { status, title, message, detail = '', helpHref =
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex, nofollow">
     <title>${escapeHtml(title)} · Pielgrzym</title>
-    <link rel="stylesheet" href="/assets/styles.css">
+    ${renderIcons()}
+    <link rel="stylesheet" href="${assetUrl('/assets/styles.css')}">
   </head>
   <body class="message-page">
     <main class="message-stage">

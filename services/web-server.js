@@ -7,6 +7,7 @@ const MarkdownIt = require('markdown-it')
 const highlight = require('highlight.js')
 const notionOAuth = require('./notion-oauth')
 const sendMessage = require('../utils/web-message')
+const { version, assetUrl, renderIcons } = require('../utils/web-assets')
 
 const PROJECT_ROOT = path.join(__dirname, '..')
 const DOCS_DIRECTORY = path.join(PROJECT_ROOT, 'docs')
@@ -378,11 +379,13 @@ function layout(title, content, activeSlug = '') {
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Oficjalna dokumentacja techniczna i podręcznik operacyjny bota Discord Pielgrzym">
+    <meta name="app-version" content="${escapeHtml(version)}">
     <title>${escapeHtml(title)} · Dokumentacja Pielgrzym</title>
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="/assets/styles.css">
-    <script src="/assets/scripts.js" defer></script>
-    <script src="/assets/invitation-animation.js" defer></script>
+    ${renderIcons()}
+    <link rel="stylesheet" href="${assetUrl('/assets/styles.css')}">
+    <script src="${assetUrl('/assets/scripts.js')}" defer></script>
+    <script src="${assetUrl('/assets/invitation-animation.js')}" defer></script>
   </head>
 
   <body>
@@ -390,7 +393,7 @@ function layout(title, content, activeSlug = '') {
       <div class="header-inner">
         <div class="brand-wrapper">
           <div class="discord-avatar-container">
-            <img src="/images/avatar.png" alt="Pielgrzym Avatar" class="discord-avatar-img">
+            <img src="${assetUrl('/images/avatar.png')}" alt="Pielgrzym Avatar" class="discord-avatar-img">
             <span class="status-indicator online" title="Status: Online"></span>
           </div>
 
@@ -398,7 +401,7 @@ function layout(title, content, activeSlug = '') {
             <div class="brand-title-line">
               <a class="brand-name" href="/">Pielgrzym</a>
               <span class="discord-bot-tag"><svg class="bot-check-icon" width="12" height="12" viewBox="0 0 16 15" aria-hidden="true"><path fill="currentColor" d="M7.4 11.9 3.2 8.1l1.4-1.4 2.8 2.5 5.5-5.5 1.4 1.4-6.9 6.8Z"/></svg><span class="bot-tag-label">APP</span></span>
-              <span class="version-tag">v0.1.1</span>
+              <span class="version-tag">v${escapeHtml(version)}</span>
             </div>
           </div>
         </div>
@@ -443,7 +446,7 @@ function layout(title, content, activeSlug = '') {
           <div class="footer-main">
             <div class="footer-identity">
               <span class="footer-brand">Pielgrzym</span>
-              <span class="footer-version">v0.1.1</span>
+              <span class="footer-version">v${escapeHtml(version)}</span>
             </div>
             <span class="footer-divider" aria-hidden="true">·</span>
             <nav class="footer-nav" aria-label="Nawigacja w stopce">
@@ -458,8 +461,8 @@ function layout(title, content, activeSlug = '') {
           </div>
         </div>
         <div class="footer-bottom">
-          <p class="footer-legal">Projekt na licencji <a href="https://github.com/Quanosek/Pielgrzym/blob/HEAD/LICENSE">GNU AGPL v3.0</a>. <a href="https://github.com/Quanosek/Pielgrzym">Kod źródłowy</a>. Znaki towarowe należą do ich właścicieli.</p>
-          <p class="footer-author">Jakub Kłało &copy; <a href="https://www.klalo.pl">klalo.pl</a></p>
+          <p class="footer-legal">Możesz używać, modyfikować i rozpowszechniać projekt zgodnie z warunkami licencji <a href="https://github.com/Quanosek/Pielgrzym/blob/HEAD/LICENSE">GNU AGPL v3.0</a>. Przy udostępnianiu zmodyfikowanej wersji przez sieć udostępnij jej użytkownikom odpowiadający kod źródłowy (sekcja 13). Oprogramowanie jest dostarczane bez gwarancji; nie publikuj tokenów ani innych danych poufnych. Znaki towarowe należą do ich właścicieli.</p>
+          <p class="footer-author">Jakub Kłało &copy; <a href="https://www.klalo.pl">klalo.pl</a><img class="footer-mark" src="${assetUrl('/images/favicon-32x32.png')}" alt="" aria-hidden="true"></p>
         </div>
       </div>
     </footer>
@@ -499,7 +502,7 @@ function createApp() {
   app.use((request, response, next) => {
     response.set(
       'Content-Security-Policy',
-      "default-src 'none'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'self'; img-src 'self'; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'",
+      "default-src 'none'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'self'; img-src 'self'; connect-src 'self'; manifest-src 'self'; base-uri 'none'; frame-ancestors 'none'",
     )
     response.set('X-Content-Type-Options', 'nosniff')
     response.set('Referrer-Policy', 'no-referrer')
@@ -509,6 +512,29 @@ function createApp() {
   notionOAuth.registerRoutes(app)
   app.use('/assets', express.static(ASSETS_DIRECTORY, { fallthrough: false, index: false, maxAge: '1h' }))
   app.use('/images', express.static(IMAGES_DIRECTORY, { fallthrough: false, index: false, maxAge: '1h' }))
+  app.use((request, response, next) => {
+    response.set('Cache-Control', 'no-cache')
+    next()
+  })
+  app.get('/favicon.ico', (request, response) => response.redirect(302, assetUrl('/images/favicon.ico')))
+  app.get('/apple-touch-icon.png', (request, response) => response.redirect(302, assetUrl('/images/apple-touch-icon.png')))
+  app.get('/site.webmanifest', (request, response) =>
+    response.type('application/manifest+json').send({
+      name: 'Pielgrzym — dokumentacja',
+      short_name: 'Pielgrzym',
+      lang: 'pl',
+      start_url: '/',
+      display: 'browser',
+      background_color: '#0d0f15',
+      theme_color: '#0d0f15',
+      icons: [192, 512].map((size) => ({
+        src: assetUrl(`/images/icon-${size}x${size}.png`),
+        sizes: `${size}x${size}`,
+        type: 'image/png',
+        purpose: 'any',
+      })),
+    }),
+  )
   app.get('/healthz', (request, response) => response.json({ status: 'ok' }))
   app.get('/search-index.json', (request, response) => response.json(buildSearchIndex()))
 
