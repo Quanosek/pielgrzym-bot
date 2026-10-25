@@ -413,6 +413,9 @@ function layout(title, content, activeSlug = '') {
           <div class="header-actions">
           <div class="search-box">
             <input type="search" id="site-search" class="search-input" placeholder="Szukaj w dokumentacji…" autocomplete="off" aria-label="Wyszukiwarka dokumentacji">
+            <button class="search-clear-button" id="search-clear" type="button" aria-label="Wyczyść wyszukiwanie" hidden>
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="m3 3 6 6m0-6-6 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+            </button>
             <kbd class="search-kbd">Ctrl K</kbd>
             <div class="search-results" id="search-results" hidden></div>
           </div>

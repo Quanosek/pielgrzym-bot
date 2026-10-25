@@ -223,11 +223,16 @@ function attachSoftNavigation() {
 
 function attachSearch() {
   const input = document.getElementById('site-search')
+  const clearButton = document.getElementById('search-clear')
   const list = document.getElementById('search-results')
   if (!input || !list) return
 
   let entries = []
   let loaded = false
+
+  function updateClearButton() {
+    if (clearButton) clearButton.hidden = !input.value
+  }
 
   async function ensureIndex() {
     if (loaded) return
@@ -266,19 +271,28 @@ function attachSearch() {
 
   input.addEventListener('focus', ensureIndex)
   input.addEventListener('input', async () => {
+    updateClearButton()
     await ensureIndex()
     if (document.activeElement === input) render(input.value)
+  })
+  clearButton?.addEventListener('click', () => {
+    input.value = ''
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+    input.focus()
   })
   input.addEventListener('keydown', (event) => {
     if (event.key !== 'Escape') return
     input.value = ''
+    updateClearButton()
     close()
     input.blur()
   })
   list.addEventListener('click', () => {
     input.value = ''
+    updateClearButton()
     close()
   })
+  updateClearButton()
   document.addEventListener('click', (event) => {
     if (event.target !== input && !list.contains(event.target)) close()
   })
