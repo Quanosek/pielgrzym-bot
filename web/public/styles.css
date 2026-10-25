@@ -1889,7 +1889,7 @@ a:focus-visible {
     cursor: pointer;
   }
 
-  .channel-topbar {
+  .content-wrapper .channel-topbar {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr);
     align-items: start;
