@@ -1024,7 +1024,7 @@ a:focus-visible {
   display: flex;
   position: relative;
   height: 1.2rem;
-  margin: 0 25% 0.2rem;
+  margin: 0 calc((100% - 0.75rem) / 4) 0.2rem;
 }
 
 .flow-branches::before {
@@ -1057,7 +1057,7 @@ a:focus-visible {
   position: absolute;
   top: 50%;
   bottom: 4px;
-  left: 50%;
+  left: 0;
   border-left: 1px solid #6a749a;
 }
 
@@ -1065,10 +1065,18 @@ a:focus-visible {
   content: '';
   position: absolute;
   bottom: 0;
-  left: calc(50% - 4px);
+  left: -4px;
   border-top: 5px solid #a9b5df;
   border-right: 4px solid transparent;
   border-left: 4px solid transparent;
+}
+
+.flow-branches span:last-child::before {
+  left: 100%;
+}
+
+.flow-branches span:last-child::after {
+  left: calc(100% - 4px);
 }
 
 .flow-destinations {
