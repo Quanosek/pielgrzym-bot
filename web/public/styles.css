@@ -2104,6 +2104,12 @@ a:focus-visible {
     -webkit-appearance: none;
   }
 
+  .search-input::-webkit-search-cancel-button {
+    display: none;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
   .header-menu .search-input {
     padding-right: 2.75rem;
   }
