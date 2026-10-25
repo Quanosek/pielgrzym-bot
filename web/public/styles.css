@@ -2104,6 +2104,10 @@ a:focus-visible {
     -webkit-appearance: none;
   }
 
+  .header-menu .search-input {
+    padding-right: 2.75rem;
+  }
+
   .search-clear-button:not([hidden]) {
     position: absolute;
     top: 50%;
